@@ -3,76 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Infrastructure Agent</title>
+    <title>Infra Agent</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0f1419; color: #e7e9ea; height: 100vh; display: flex; flex-direction: column; }
-        .header { padding: 16px 24px; background: #1a1f2e; border-bottom: 1px solid #2d3748; display: flex; align-items: center; gap: 12px; }
-        .header .dot { width: 10px; height: 10px; background: #10b981; border-radius: 50%; animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        .header h1 { font-size: 18px; font-weight: 600; flex: 1; }
-        .header select { background: #0f1419; border: 1px solid #2d3748; border-radius: 6px; padding: 6px 12px; color: #e7e9ea; font-size: 13px; }
-        .header .btn-new { background: #1d4ed8; border: none; border-radius: 6px; padding: 6px 14px; color: white; font-size: 13px; cursor: pointer; }
-        .header .btn-new:hover { background: #2563eb; }
-        .header .btn-creds { background: #374151; border: none; border-radius: 6px; padding: 6px 14px; color: #9ca3af; font-size: 13px; cursor: pointer; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #0a0e17; color: #e2e8f0; height: 100vh; display: flex; }
+
+        /* Sidebar */
+        .sidebar { width: 260px; background: #0f1520; border-right: 1px solid #1e293b; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 20px; border-bottom: 1px solid #1e293b; }
+        .sidebar-header h1 { font-size: 15px; font-weight: 700; color: #60a5fa; display: flex; align-items: center; gap: 8px; }
+        .sidebar-header h1::before { content: ''; width: 8px; height: 8px; background: #10b981; border-radius: 50%; }
+        .project-section { padding: 16px; flex: 1; overflow-y: auto; }
+        .project-section h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 10px; }
+        .project-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; transition: all 0.15s; }
+        .project-item:hover { background: #1e293b; }
+        .project-item.active { background: #1d4ed8; color: white; }
+        .project-item .dot { width: 6px; height: 6px; border-radius: 50%; background: #64748b; }
+        .project-item.active .dot { background: #86efac; }
+        .sidebar-footer { padding: 16px; border-top: 1px solid #1e293b; display: flex; flex-direction: column; gap: 8px; }
+        .sidebar-btn { padding: 8px 12px; border-radius: 6px; border: 1px solid #1e293b; background: transparent; color: #94a3b8; font-size: 12px; cursor: pointer; text-align: left; transition: all 0.15s; }
+        .sidebar-btn:hover { background: #1e293b; color: #e2e8f0; }
+        .sidebar-btn.primary { background: #1d4ed8; border-color: #1d4ed8; color: white; }
+        .sidebar-btn.primary:hover { background: #2563eb; }
+
+        /* Main area */
+        .main { flex: 1; display: flex; flex-direction: column; }
+        .topbar { padding: 14px 24px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; justify-content: space-between; }
+        .topbar .project-name { font-size: 14px; font-weight: 600; }
+        .topbar .status { font-size: 12px; color: #10b981; display: flex; align-items: center; gap: 6px; }
+        .topbar .status::before { content: ''; width: 6px; height: 6px; background: #10b981; border-radius: 50%; }
+
+        /* Chat */
         .chat-container { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
-        .message { max-width: 80%; padding: 12px 16px; border-radius: 12px; line-height: 1.6; font-size: 14px; white-space: pre-wrap; }
+        .chat-container:empty::after { content: 'Ask anything about your infrastructure...'; color: #475569; font-size: 14px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .message { max-width: 75%; padding: 12px 16px; border-radius: 16px; line-height: 1.6; font-size: 14px; white-space: pre-wrap; animation: fadeIn 0.2s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
         .message.user { align-self: flex-end; background: #1d4ed8; border-bottom-right-radius: 4px; }
-        .message.agent { align-self: flex-start; background: #1a1f2e; border: 1px solid #2d3748; border-bottom-left-radius: 4px; }
-        .message.agent code { background: #2d3748; padding: 2px 6px; border-radius: 4px; font-size: 13px; }
-        .message.agent pre { background: #0d1117; padding: 12px; border-radius: 8px; margin: 8px 0; overflow-x: auto; }
+        .message.agent { align-self: flex-start; background: #1e293b; border-bottom-left-radius: 4px; }
+        .message.agent code { background: #334155; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+        .message.agent pre { background: #0f172a; padding: 12px; border-radius: 8px; margin: 8px 0; overflow-x: auto; border: 1px solid #1e293b; }
         .message.agent pre code { background: none; padding: 0; }
-        .typing { align-self: flex-start; padding: 12px 16px; background: #1a1f2e; border: 1px solid #2d3748; border-radius: 12px; }
-        .typing span { display: inline-block; width: 8px; height: 8px; background: #60a5fa; border-radius: 50%; animation: bounce 1.4s infinite; margin: 0 2px; }
+        .typing { align-self: flex-start; padding: 14px 18px; background: #1e293b; border-radius: 16px; }
+        .typing span { display: inline-block; width: 7px; height: 7px; background: #60a5fa; border-radius: 50%; animation: bounce 1.4s infinite; margin: 0 2px; }
         .typing span:nth-child(2) { animation-delay: 0.2s; }
         .typing span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
-        .input-area { padding: 16px 24px; background: #1a1f2e; border-top: 1px solid #2d3748; }
-        .input-wrapper { display: flex; gap: 12px; max-width: 900px; margin: 0 auto; }
-        .input-wrapper textarea { flex: 1; background: #0f1419; border: 1px solid #2d3748; border-radius: 8px; padding: 12px 16px; color: #e7e9ea; font-size: 14px; resize: none; height: 48px; font-family: inherit; }
+        @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
+
+        /* Input */
+        .input-area { padding: 16px 24px; border-top: 1px solid #1e293b; background: #0f1520; }
+        .input-wrapper { display: flex; gap: 10px; align-items: end; }
+        .input-wrapper textarea { flex: 1; background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 12px 16px; color: #e2e8f0; font-size: 14px; resize: none; height: 46px; font-family: inherit; transition: border-color 0.15s; }
         .input-wrapper textarea:focus { outline: none; border-color: #60a5fa; }
-        .input-wrapper button { background: #1d4ed8; border: none; border-radius: 8px; padding: 0 20px; color: white; font-size: 14px; cursor: pointer; font-weight: 500; }
+        .input-wrapper button { background: #1d4ed8; border: none; border-radius: 10px; width: 46px; height: 46px; color: white; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
         .input-wrapper button:hover { background: #2563eb; }
-        .input-wrapper button:disabled { background: #374151; cursor: not-allowed; }
-        /* Modal styles */
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; }
+        .input-wrapper button:disabled { background: #334155; cursor: not-allowed; }
+
+        /* Modal */
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 100; align-items: center; justify-content: center; }
         .modal-overlay.show { display: flex; }
-        .modal { background: #1a1f2e; border: 1px solid #2d3748; border-radius: 12px; padding: 24px; width: 420px; }
-        .modal h2 { margin-bottom: 16px; font-size: 16px; }
-        .modal label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #9ca3af; margin-bottom: 12px; }
-        .modal input { background: #0f1419; border: 1px solid #2d3748; border-radius: 6px; padding: 8px 12px; color: #e7e9ea; font-size: 14px; }
+        .modal { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 28px; width: 440px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+        .modal h2 { margin-bottom: 20px; font-size: 16px; font-weight: 600; }
+        .modal label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #94a3b8; margin-bottom: 14px; font-weight: 500; }
+        .modal input { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px 14px; color: #e2e8f0; font-size: 13px; transition: border-color 0.15s; }
         .modal input:focus { outline: none; border-color: #60a5fa; }
-        .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
-        .modal .btn-save { background: #16a34a; border: none; border-radius: 6px; padding: 8px 16px; color: white; font-size: 13px; cursor: pointer; }
-        .modal .btn-cancel { background: #374151; border: none; border-radius: 6px; padding: 8px 16px; color: #9ca3af; font-size: 13px; cursor: pointer; }
-        .tabs { display: flex; gap: 4px; margin-bottom: 16px; }
-        .tab { background: #0f1419; border: 1px solid #2d3748; border-radius: 6px; padding: 6px 14px; color: #9ca3af; font-size: 13px; cursor: pointer; }
-        .tab.active { background: #1d4ed8; border-color: #1d4ed8; color: white; }
-        .tab-content { display: flex; flex-direction: column; gap: 12px; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .modal .btn-save { flex: 1; background: #10b981; border: none; border-radius: 8px; padding: 10px; color: white; font-size: 13px; font-weight: 500; cursor: pointer; }
+        .modal .btn-save:hover { background: #059669; }
+        .modal .btn-cancel { flex: 1; background: #334155; border: none; border-radius: 8px; padding: 10px; color: #94a3b8; font-size: 13px; cursor: pointer; }
+        .modal .btn-cancel:hover { background: #475569; }
+        .tabs { display: flex; gap: 4px; margin-bottom: 18px; background: #0f172a; border-radius: 8px; padding: 4px; }
+        .tab { flex: 1; background: transparent; border: none; border-radius: 6px; padding: 8px; color: #94a3b8; font-size: 12px; cursor: pointer; font-weight: 500; transition: all 0.15s; }
+        .tab.active { background: #1d4ed8; color: white; }
+        .tab-content { display: flex; flex-direction: column; }
         .tab-content.hidden { display: none; }
-        .hint { font-size: 12px; color: #6b7280; margin-top: 4px; }
-        #credStatus, #projectStatus { margin-top: 12px; font-size: 12px; }
-        .project-list { display: flex; gap: 6px; flex-wrap: wrap; padding: 4px 24px; }
-        .project-list .tag { background: #1a1f2e; border: 1px solid #2d3748; border-radius: 16px; padding: 4px 12px; font-size: 12px; color: #9ca3af; cursor: pointer; }
-        .project-list .tag.active { border-color: #60a5fa; color: #60a5fa; }
-        .project-list .tag:hover { border-color: #60a5fa; }
+        .hint { font-size: 11px; color: #64748b; margin-top: 4px; }
+        #credStatus, #projectStatus { margin-top: 14px; font-size: 12px; padding: 8px 12px; border-radius: 6px; }
+        .status-ok { background: #052e16; color: #86efac; }
+        .status-err { background: #2d0a0a; color: #fca5a5; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="dot"></div>
-        <h1>Infrastructure Agent</h1>
-        <select id="projectSelect" onchange="switchProject()"></select>
-        <button class="btn-new" onclick="openNewProject()">+ New Project</button>
-        <button class="btn-creds" onclick="openCreds()">⚙️ AWS</button>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>Infra Agent</h1>
+        </div>
+        <div class="project-section">
+            <h3>Projects</h3>
+            <div id="projectList"></div>
+        </div>
+        <div class="sidebar-footer">
+            <button class="sidebar-btn primary" onclick="openNewProject()">+ New Project</button>
+            <button class="sidebar-btn" onclick="openCreds()">⚙️ AWS Credentials</button>
+        </div>
     </div>
 
-    <div class="chat-container" id="chat"></div>
-
-    <div class="input-area">
-        <div class="input-wrapper">
-            <textarea id="input" placeholder="Ask about your infrastructure..." onkeydown="handleKey(event)"></textarea>
-            <button id="sendBtn" onclick="send()">Send</button>
+    <div class="main">
+        <div class="topbar">
+            <span class="project-name" id="currentProjectName">No project selected</span>
+            <span class="status" id="connStatus" style="display:none">Connected</span>
+        </div>
+        <div class="chat-container" id="chat" style="position:relative;"></div>
+        <div class="input-area">
+            <div class="input-wrapper">
+                <textarea id="input" placeholder="Ask about your infrastructure..." onkeydown="handleKey(event)"></textarea>
+                <button id="sendBtn" onclick="send()">↑</button>
+            </div>
         </div>
     </div>
 
@@ -80,11 +115,11 @@
     <div class="modal-overlay" id="newProjectModal">
         <div class="modal">
             <h2>Create New Project</h2>
-            <label>Project Name<input type="text" id="projectName" placeholder="e.g. cash-invoice, finfinity"></label>
+            <label>Project Name<input type="text" id="projectName" placeholder="e.g. cash-invoice"></label>
             <label>AWS Region<input type="text" id="projectRegion" placeholder="us-east-1" value="us-east-1"></label>
-            <label>Description (optional)<input type="text" id="projectDesc" placeholder="Brief description of the project"></label>
+            <label>Description<input type="text" id="projectDesc" placeholder="Brief description (optional)"></label>
             <div class="modal-actions">
-                <button class="btn-save" onclick="createProject()">Create Project</button>
+                <button class="btn-save" onclick="createProject()">Create</button>
                 <button class="btn-cancel" onclick="closeNewProject()">Cancel</button>
             </div>
             <div id="projectStatus"></div>
@@ -102,8 +137,8 @@
             </div>
             <div class="tab-content" id="tab-iam">
                 <label>Access Key ID<input type="text" id="accessKey" placeholder="AKIA..."></label>
-                <label>Secret Access Key<input type="password" id="secretKey" placeholder="••••••••"></label>
-                <label>Session Token (optional)<input type="text" id="sessionToken" placeholder="For temporary credentials"></label>
+                <label>Secret Access Key<input type="password" id="secretKey" placeholder="Enter secret key"></label>
+                <label>Session Token<input type="text" id="sessionToken" placeholder="Optional — for temporary credentials"></label>
                 <label>Region<input type="text" id="iamRegion" placeholder="us-east-1" value="us-east-1"></label>
             </div>
             <div class="tab-content hidden" id="tab-sso">
@@ -114,7 +149,7 @@
             </div>
             <div class="tab-content hidden" id="tab-profile">
                 <label>Profile Name<input type="text" id="profileName" placeholder="default"></label>
-                <p class="hint">Uses profile from ~/.aws/credentials</p>
+                <p class="hint">Uses existing profile from ~/.aws/credentials on the server</p>
             </div>
             <div class="modal-actions">
                 <button class="btn-save" onclick="saveCreds()">Save & Connect</button>
@@ -131,7 +166,6 @@
         const API_URL = '/api';
         let currentProject = '';
 
-        // Load projects on start
         loadProjects();
 
         function addMessage(text, role) {
@@ -149,34 +183,22 @@
                 .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
         }
 
-        function showTyping() {
-            const div = document.createElement('div');
-            div.className = 'typing'; div.id = 'typing';
-            div.innerHTML = '<span></span><span></span><span></span>';
-            chat.appendChild(div); chat.scrollTop = chat.scrollHeight;
-        }
+        function showTyping() { const d = document.createElement('div'); d.className = 'typing'; d.id = 'typing'; d.innerHTML = '<span></span><span></span><span></span>'; chat.appendChild(d); chat.scrollTop = chat.scrollHeight; }
         function hideTyping() { const el = document.getElementById('typing'); if (el) el.remove(); }
 
         async function send() {
             const text = input.value.trim();
-            if (!text) return;
+            if (!text || !currentProject) return;
             addMessage(text, 'user');
             input.value = '';
             sendBtn.disabled = true;
             showTyping();
             try {
-                const res = await fetch(`${API_URL}/chat`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ message: text, project: currentProject })
-                });
+                const res = await fetch(`${API_URL}/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, project: currentProject }) });
                 const data = await res.json();
                 hideTyping();
                 addMessage(data.response, 'agent');
-            } catch (e) {
-                hideTyping();
-                addMessage('⚠️ Connection error. Make sure backend is running.', 'agent');
-            }
+            } catch (e) { hideTyping(); addMessage('⚠️ Connection error.', 'agent'); }
             sendBtn.disabled = false;
             input.focus();
         }
@@ -188,26 +210,36 @@
             try {
                 const res = await fetch(`${API_URL}/projects`);
                 const data = await res.json();
-                const select = document.getElementById('projectSelect');
-                select.innerHTML = '';
+                const list = document.getElementById('projectList');
+                list.innerHTML = '';
                 data.projects.forEach(p => {
-                    const opt = document.createElement('option');
-                    opt.value = p.name; opt.textContent = p.name;
-                    select.appendChild(opt);
+                    const div = document.createElement('div');
+                    div.className = 'project-item' + (p.name === currentProject ? ' active' : '');
+                    div.innerHTML = `<span class="dot"></span>${p.name}`;
+                    div.onclick = () => selectProject(p.name);
+                    list.appendChild(div);
                 });
-                if (data.projects.length > 0) {
-                    currentProject = data.projects[0].name;
-                    select.value = currentProject;
-                }
+                if (!currentProject && data.projects.length > 0) selectProject(data.projects[0].name);
             } catch (e) {}
         }
 
-        function switchProject() {
-            currentProject = document.getElementById('projectSelect').value;
+        function selectProject(name) {
+            currentProject = name;
+            document.getElementById('currentProjectName').textContent = name;
             chat.innerHTML = '';
-            addMessage(`Switched to project: ${currentProject}`, 'agent');
-            // Reset conversation
-            fetch(`${API_URL}/reset`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ project: currentProject }) });
+            document.querySelectorAll('.project-item').forEach(el => el.classList.toggle('active', el.textContent === name));
+            loadCredStatus();
+            fetch(`${API_URL}/reset`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ project: name }) });
+        }
+
+        async function loadCredStatus() {
+            try {
+                const res = await fetch(`${API_URL}/credentials/${currentProject}`);
+                const data = await res.json();
+                const el = document.getElementById('connStatus');
+                if (data.configured) { el.style.display = 'flex'; el.textContent = 'Connected'; }
+                else { el.style.display = 'flex'; el.textContent = 'No AWS credentials'; el.style.color = '#f59e0b'; }
+            } catch {}
         }
 
         function openNewProject() { document.getElementById('newProjectModal').classList.add('show'); }
@@ -218,57 +250,59 @@
             const region = document.getElementById('projectRegion').value.trim() || 'us-east-1';
             const desc = document.getElementById('projectDesc').value.trim();
             const status = document.getElementById('projectStatus');
-            if (!name) { status.style.color = '#ef4444'; status.textContent = 'Project name required'; return; }
-            status.style.color = '#eab308'; status.textContent = 'Creating...';
+            if (!name) { status.className = 'status-err'; status.textContent = 'Name required'; return; }
+            status.className = ''; status.style.color = '#eab308'; status.textContent = 'Creating...';
             try {
-                const res = await fetch(`${API_URL}/projects`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, region, description: desc })
-                });
+                const res = await fetch(`${API_URL}/projects`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, region, description: desc }) });
                 const data = await res.json();
-                if (data.success) {
-                    status.style.color = '#10b981'; status.textContent = '✓ Created!';
-                    await loadProjects();
-                    document.getElementById('projectSelect').value = name;
-                    currentProject = name;
-                    setTimeout(closeNewProject, 1000);
-                } else { status.style.color = '#ef4444'; status.textContent = '✗ ' + data.error; }
-            } catch (e) { status.style.color = '#ef4444'; status.textContent = '✗ Backend not reachable'; }
+                if (data.success) { status.className = 'status-ok'; status.textContent = '✓ Created!'; await loadProjects(); selectProject(name); setTimeout(closeNewProject, 800); }
+                else { status.className = 'status-err'; status.textContent = data.error; }
+            } catch (e) { status.className = 'status-err'; status.textContent = 'Backend not reachable'; }
         }
 
-        // --- AWS Credentials ---
+        // --- Credentials ---
         let activeTab = 'iam';
-        function openCreds() { document.getElementById('credModal').classList.add('show'); }
+        function openCreds() {
+            document.getElementById('credModal').classList.add('show');
+            fetch(`${API_URL}/credentials/${currentProject}`)
+                .then(r => r.json())
+                .then(data => {
+                    const status = document.getElementById('credStatus');
+                    if (data.configured) {
+                        status.className = 'status-ok';
+                        if (data.type === 'iam') {
+                            document.getElementById('accessKey').value = data.accessKey;
+                            document.getElementById('iamRegion').value = data.region || 'us-east-1';
+                            status.textContent = '✓ Connected — ' + data.accessKey;
+                        } else {
+                            document.getElementById('profileName').value = data.profile;
+                            status.textContent = '✓ Using profile: ' + data.profile;
+                            switchTab('profile');
+                        }
+                    } else { status.className = ''; status.textContent = ''; }
+                }).catch(() => {});
+        }
         function closeCreds() { document.getElementById('credModal').classList.remove('show'); }
         function switchTab(tab) {
             activeTab = tab;
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
-            event.target.classList.add('active');
+            document.querySelectorAll('.tab')[['iam','sso','profile'].indexOf(tab)].classList.add('active');
             document.getElementById('tab-' + tab).classList.remove('hidden');
         }
         async function saveCreds() {
             let creds = { type: activeTab, project: currentProject };
-            if (activeTab === 'iam') {
-                creds.accessKey = document.getElementById('accessKey').value;
-                creds.secretKey = document.getElementById('secretKey').value;
-                creds.sessionToken = document.getElementById('sessionToken').value;
-                creds.region = document.getElementById('iamRegion').value;
-            } else if (activeTab === 'sso') {
-                creds.ssoUrl = document.getElementById('ssoUrl').value;
-                creds.ssoRegion = document.getElementById('ssoRegion').value;
-                creds.accountId = document.getElementById('ssoAccount').value;
-                creds.roleName = document.getElementById('ssoRole').value;
-            } else { creds.profile = document.getElementById('profileName').value || 'default'; }
+            if (activeTab === 'iam') { creds.accessKey = document.getElementById('accessKey').value; creds.secretKey = document.getElementById('secretKey').value; creds.sessionToken = document.getElementById('sessionToken').value; creds.region = document.getElementById('iamRegion').value; }
+            else if (activeTab === 'sso') { creds.ssoUrl = document.getElementById('ssoUrl').value; creds.ssoRegion = document.getElementById('ssoRegion').value; creds.accountId = document.getElementById('ssoAccount').value; creds.roleName = document.getElementById('ssoRole').value; }
+            else { creds.profile = document.getElementById('profileName').value || 'default'; }
             const status = document.getElementById('credStatus');
-            status.style.color = '#eab308'; status.textContent = 'Connecting...';
+            status.className = ''; status.style.color = '#eab308'; status.textContent = 'Connecting...';
             try {
                 const res = await fetch(`${API_URL}/credentials`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(creds) });
                 const data = await res.json();
-                if (data.success) { status.style.color = '#10b981'; status.textContent = '✓ ' + data.identity; setTimeout(closeCreds, 1500); }
-                else { status.style.color = '#ef4444'; status.textContent = '✗ ' + data.error; }
-            } catch (e) { status.style.color = '#ef4444'; status.textContent = '✗ Backend not reachable'; }
+                if (data.success) { status.className = 'status-ok'; status.textContent = '✓ ' + data.identity; loadCredStatus(); setTimeout(closeCreds, 1500); }
+                else { status.className = 'status-err'; status.textContent = data.error; }
+            } catch (e) { status.className = 'status-err'; status.textContent = 'Backend not reachable'; }
         }
     </script>
 </body>

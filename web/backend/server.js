@@ -216,6 +216,19 @@ app.post('/api/credentials', (req, res) => {
     } else res.json({ success: false, error: 'Unknown type' });
 });
 
+// Get saved credentials (masked) for a project
+app.get('/api/credentials/:project', (req, res) => {
+    const state = getState(req.params.project);
+    if (state.awsEnv && state.awsEnv.AWS_ACCESS_KEY_ID) {
+        const key = state.awsEnv.AWS_ACCESS_KEY_ID;
+        res.json({ configured: true, type: 'iam', accessKey: key.slice(0, 4) + '...' + key.slice(-4), region: state.awsEnv.AWS_DEFAULT_REGION });
+    } else if (state.awsEnv && state.awsEnv.AWS_PROFILE) {
+        res.json({ configured: true, type: 'profile', profile: state.awsEnv.AWS_PROFILE, region: state.awsEnv.AWS_DEFAULT_REGION });
+    } else {
+        res.json({ configured: false });
+    }
+});
+
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 const PORT = process.env.PORT || 3001;

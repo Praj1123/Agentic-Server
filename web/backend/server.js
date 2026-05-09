@@ -32,6 +32,11 @@ function getState(project) {
         if (fs.existsSync(historyFile)) {
             try { projectState[project].history = JSON.parse(fs.readFileSync(historyFile, 'utf8')); } catch {}
         }
+        // Load saved AWS credentials from disk
+        const credFile = path.join(PROJECTS_DIR, project, '.aws-env.json');
+        if (fs.existsSync(credFile)) {
+            try { projectState[project].awsEnv = JSON.parse(fs.readFileSync(credFile, 'utf8')); } catch {}
+        }
     }
     return projectState[project];
 }
@@ -41,6 +46,11 @@ function saveHistory(project) {
     if (!state) return;
     const historyFile = path.join(PROJECTS_DIR, project, 'chat-history.json');
     try { fs.writeFileSync(historyFile, JSON.stringify(state.history, null, 2)); } catch {}
+}
+
+function saveAwsEnv(project, env) {
+    const credFile = path.join(PROJECTS_DIR, project, '.aws-env.json');
+    try { fs.writeFileSync(credFile, JSON.stringify(env)); } catch {}
 }
 
 // --- Projects API ---
@@ -186,12 +196,13 @@ app.post('/api/credentials', (req, res) => {
         let out = '';
         verify.stdout.on('data', d => out += d);
         verify.on('close', code => {
-            if (code === 0) { try { res.json({ success: true, identity: JSON.parse(out).Arn }); } catch { res.json({ success: true, identity: 'connected' }); } }
+            if (code === 0) { saveAwsEnv(project, state.awsEnv); try { res.json({ success: true, identity: JSON.parse(out).Arn }); } catch { res.json({ success: true, identity: 'connected' }); } }
             else { state.awsEnv = {}; res.json({ success: false, error: 'Invalid credentials' }); }
         });
     } else if (type === 'sso') {
         if (!ssoUrl || !accountId || !roleName) return res.json({ success: false, error: 'SSO URL, Account ID, and Role required' });
         state.awsEnv = { AWS_PROFILE: `sso-${accountId}`, AWS_DEFAULT_REGION: ssoRegion || 'us-east-1' };
+        saveAwsEnv(project, state.awsEnv);
         res.json({ success: true, identity: `SSO: ${roleName}@${accountId}. Run "aws sso login --profile sso-${accountId}" to authenticate.` });
     } else if (type === 'profile') {
         state.awsEnv = { AWS_PROFILE: profile || 'default' };

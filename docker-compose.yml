@@ -1,0 +1,15 @@
+version: "3.8"
+services:
+  infra-agent:
+    build: .
+    ports:
+      - "3001:3001"
+    volumes:
+      - agent-data:/data/projects
+    environment:
+      - PROJECTS_DIR=/data/projects
+      - PORT=3001
+    restart: unless-stopped
+
+volumes:
+  agent-data:

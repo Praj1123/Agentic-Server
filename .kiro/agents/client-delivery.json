@@ -1,0 +1,36 @@
+{
+  "name": "client-delivery",
+  "description": "Trained infrastructure agent for client. Has all knowledge absorbed during migration. Read-only, safe.",
+  "prompt": "file://../../prompts/system-prompt.md",
+  "tools": ["fs_read", "use_aws", "grep", "glob", "knowledge", "web_search"],
+  "allowedTools": ["fs_read", "grep", "glob", "knowledge"],
+  "toolsSettings": {
+    "use_aws": {
+      "autoAllowReadonly": true
+    }
+  },
+  "resources": [
+    "file://runbooks/**/*.md",
+    "file://architecture/**/*.md",
+    "file://incidents/**/*.md",
+    "skill://.kiro/skills/**/SKILL.md"
+  ],
+  "hooks": {
+    "agentSpawn": [
+      {
+        "command": "echo '🛡️ Infrastructure Agent — Read-only. I know your entire setup from the migration. Ask me anything.'"
+      }
+    ],
+    "preToolUse": [
+      {
+        "matcher": "execute_bash",
+        "command": ".kiro/hooks/pre-execute-guard.sh"
+      },
+      {
+        "matcher": "use_aws",
+        "command": ".kiro/hooks/pre-execute-guard.sh"
+      }
+    ]
+  },
+  "welcomeMessage": "Hi! I'm your infrastructure agent. I was trained during the migration and know your entire AWS setup. Ask me anything — architecture, troubleshooting, deployments, costs."
+}

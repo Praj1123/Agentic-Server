@@ -1,0 +1,18 @@
+{
+  "name": "migration",
+  "description": "Self-learning DevOps agent.",
+  "prompt": "file://../../prompts/system-prompt.md",
+  "tools": ["fs_read", "fs_write", "execute_bash", "use_aws", "grep", "glob", "knowledge"],
+  "allowedTools": ["fs_read", "grep", "glob", "knowledge"],
+  "resources": [
+    "skill://.kiro/skills/**/SKILL.md"
+  ],
+  "hooks": {
+    "stop": [
+      {
+        "command": "echo 'If you performed a meaningful task (created/modified/debugged/deployed something), store a brief summary in knowledge base using the knowledge tool.'"
+      }
+    ]
+  },
+  "welcomeMessage": "Infra agent ready. I execute commands with your approval and remember everything."
+}

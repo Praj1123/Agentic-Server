@@ -1,7 +1,6 @@
-version: "3.8"
 services:
   infra-agent:
-    build: .
+    image: infra-agent:latest
     ports:
       - "3001:3001"
     volumes:

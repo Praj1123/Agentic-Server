@@ -25,28 +25,32 @@ jobs:
             if [ -d "/opt/infra-agent/.git" ]; then
               cd /opt/infra-agent && git pull
             else
+              rm -rf /opt/infra-agent/*
               git clone https://github.com/${{ github.repository }}.git /opt/infra-agent
             fi
 
+            # Create projects directory
+            mkdir -p ~/.infra-agent/projects
+
             # Install dependencies
             cd /opt/infra-agent/web/backend
-            npm install --production
+            npm install --omit=dev
 
             # Setup systemd service (first time only)
             if [ ! -f /etc/systemd/system/infra-agent.service ]; then
-              sudo tee /etc/systemd/system/infra-agent.service > /dev/null <<EOF
+              sudo tee /etc/systemd/system/infra-agent.service > /dev/null << 'EOF'
             [Unit]
             Description=Infrastructure Agent
             After=network.target
 
             [Service]
             Type=simple
-            User=$USER
+            User=ubuntu
             WorkingDirectory=/opt/infra-agent/web/backend
             ExecStart=/usr/bin/node server.js
             Restart=always
             Environment=PORT=3001
-            Environment=PROJECTS_DIR=/home/$USER/.infra-agent/projects
+            Environment=PROJECTS_DIR=/home/ubuntu/.infra-agent/projects
 
             [Install]
             WantedBy=multi-user.target

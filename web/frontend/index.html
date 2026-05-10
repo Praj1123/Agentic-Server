@@ -6,115 +6,157 @@
     <title>Infra Agent</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #0a0e17; color: #e2e8f0; height: 100vh; display: flex; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #0f0f1a; color: #e2e8f0; height: 100vh; display: flex; }
+        .hidden { display: none !important; }
+
+        /* Login */
+        .login-screen { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); }
+        .login-box { background: rgba(30,41,59,0.8); backdrop-filter: blur(20px); border: 1px solid rgba(99,102,241,0.2); border-radius: 20px; padding: 36px; width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+        .login-box h2 { text-align: center; margin-bottom: 28px; font-size: 22px; background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .login-box label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #94a3b8; margin-bottom: 16px; font-weight: 500; }
+        .login-box input { background: rgba(15,23,42,0.6); border: 1.5px solid #334155; border-radius: 10px; padding: 12px 16px; color: #e2e8f0; font-size: 14px; transition: all 0.2s; }
+        .login-box input:focus { outline: none; border-color: #818cf8; box-shadow: 0 0 0 3px rgba(129,140,248,0.15); }
+        .login-box button { width: 100%; background: linear-gradient(135deg, #667eea, #764ba2); border: none; border-radius: 10px; padding: 13px; color: white; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 8px; box-shadow: 0 4px 16px rgba(102,126,234,0.3); transition: all 0.2s; }
+        .login-box button:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(102,126,234,0.4); }
+        #loginError { color: #f87171; font-size: 12px; margin-top: 10px; text-align: center; }
 
         /* Sidebar */
-        .sidebar { width: 260px; background: #0f1520; border-right: 1px solid #1e293b; display: flex; flex-direction: column; }
-        .sidebar-header { padding: 20px; border-bottom: 1px solid #1e293b; }
-        .sidebar-header h1 { font-size: 15px; font-weight: 700; color: #60a5fa; display: flex; align-items: center; gap: 8px; }
-        .sidebar-header h1::before { content: ''; width: 8px; height: 8px; background: #10b981; border-radius: 50%; }
+        .sidebar { width: 260px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); border-right: 1px solid rgba(99,102,241,0.1); display: flex; flex-direction: column; }
+        .sidebar-header { padding: 22px 20px; border-bottom: 1px solid rgba(99,102,241,0.1); }
+        .sidebar-header h1 { font-size: 16px; font-weight: 700; background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 10px; }
+        .sidebar-header h1::before { content: ''; width: 8px; height: 8px; background: #34d399; border-radius: 50%; box-shadow: 0 0 8px #34d399; }
         .project-section { padding: 16px; flex: 1; overflow-y: auto; }
-        .project-section h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin-bottom: 10px; }
-        .project-item { padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; transition: all 0.15s; }
-        .project-item:hover { background: #1e293b; }
-        .project-item.active { background: #1d4ed8; color: white; }
-        .project-item .dot { width: 6px; height: 6px; border-radius: 50%; background: #64748b; }
-        .project-item.active .dot { background: #86efac; }
-        .sidebar-footer { padding: 16px; border-top: 1px solid #1e293b; display: flex; flex-direction: column; gap: 8px; }
-        .sidebar-btn { padding: 8px 12px; border-radius: 6px; border: 1px solid #1e293b; background: transparent; color: #94a3b8; font-size: 12px; cursor: pointer; text-align: left; transition: all 0.15s; }
-        .sidebar-btn:hover { background: #1e293b; color: #e2e8f0; }
-        .sidebar-btn.primary { background: #1d4ed8; border-color: #1d4ed8; color: white; }
-        .sidebar-btn.primary:hover { background: #2563eb; }
+        .project-section h3 { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #64748b; margin-bottom: 12px; font-weight: 600; }
+        .project-item { padding: 10px 14px; border-radius: 10px; cursor: pointer; font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; transition: all 0.15s; color: #94a3b8; }
+        .project-item:hover { background: rgba(99,102,241,0.1); color: #e2e8f0; }
+        .project-item.active { background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(168,85,247,0.2)); color: white; border: 1px solid rgba(99,102,241,0.3); }
+        .project-item .dot { width: 7px; height: 7px; border-radius: 50%; background: #475569; }
+        .project-item.active .dot { background: #34d399; box-shadow: 0 0 6px #34d399; }
+        .sidebar-footer { padding: 16px; border-top: 1px solid rgba(99,102,241,0.1); display: flex; flex-direction: column; gap: 6px; }
+        .sidebar-btn { padding: 9px 14px; border-radius: 8px; border: 1px solid rgba(99,102,241,0.15); background: transparent; color: #94a3b8; font-size: 12px; cursor: pointer; text-align: left; transition: all 0.15s; font-weight: 500; }
+        .sidebar-btn:hover { background: rgba(99,102,241,0.1); color: #e2e8f0; border-color: rgba(99,102,241,0.3); }
+        .sidebar-btn.primary { background: linear-gradient(135deg, #667eea, #764ba2); border: none; color: white; }
+        .sidebar-btn.primary:hover { opacity: 0.9; }
+        .sidebar-btn.danger { color: #f87171; }
 
-        /* Main area */
-        .main { flex: 1; display: flex; flex-direction: column; }
-        .topbar { padding: 14px 24px; border-bottom: 1px solid #1e293b; display: flex; align-items: center; justify-content: space-between; }
-        .topbar .project-name { font-size: 14px; font-weight: 600; }
-        .topbar .status { font-size: 12px; color: #10b981; display: flex; align-items: center; gap: 6px; }
-        .topbar .status::before { content: ''; width: 6px; height: 6px; background: #10b981; border-radius: 50%; }
+        /* Main */
+        .main { flex: 1; display: flex; flex-direction: column; background: #0f0f1a; }
+        .topbar { padding: 14px 24px; border-bottom: 1px solid rgba(99,102,241,0.1); display: flex; align-items: center; justify-content: space-between; background: rgba(26,26,46,0.5); }
+        .topbar .project-name { font-size: 14px; font-weight: 600; color: #e2e8f0; }
+        .topbar .status { font-size: 12px; color: #34d399; display: flex; align-items: center; gap: 6px; }
+        .topbar .status::before { content: ''; width: 6px; height: 6px; background: #34d399; border-radius: 50%; box-shadow: 0 0 6px #34d399; }
+        .topbar-actions { display: flex; gap: 8px; }
+        .topbar-actions button { background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2); border-radius: 8px; padding: 6px 12px; color: #94a3b8; font-size: 11px; cursor: pointer; font-weight: 500; transition: all 0.15s; }
+        .topbar-actions button:hover { color: #e2e8f0; border-color: #818cf8; background: rgba(99,102,241,0.2); }
 
         /* Chat */
-        .chat-container { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
-        .chat-container:empty::after { content: 'Ask anything about your infrastructure...'; color: #475569; font-size: 14px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        .message { max-width: 75%; padding: 12px 16px; border-radius: 16px; line-height: 1.4; font-size: 14px; white-space: pre-line; word-wrap: break-word; animation: fadeIn 0.2s; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-        .message.user { align-self: flex-end; background: #1d4ed8; border-bottom-right-radius: 4px; }
-        .message.agent { align-self: flex-start; background: #1e293b; border-bottom-left-radius: 4px; }
-        .message.agent code { background: #334155; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-family: 'JetBrains Mono', monospace; }
-        .message.agent pre { background: #0f172a; padding: 12px; border-radius: 8px; margin: 8px 0; overflow-x: auto; border: 1px solid #1e293b; position: relative; }
-        .message.agent pre code { background: none; padding: 0; font-size: 12px; line-height: 1.5; }
-        .copy-btn { position: absolute; top: 8px; right: 8px; background: #334155; border: none; border-radius: 4px; padding: 4px 8px; color: #94a3b8; font-size: 11px; cursor: pointer; opacity: 0; transition: opacity 0.15s; }
+        .chat-container { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; position: relative; }
+        .message { max-width: 75%; padding: 14px 18px; border-radius: 18px; line-height: 1.5; font-size: 14px; white-space: pre-line; word-wrap: break-word; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .message.user { align-self: flex-end; background: linear-gradient(135deg, #667eea, #764ba2); border-bottom-right-radius: 4px; color: white; box-shadow: 0 4px 12px rgba(102,126,234,0.2); }
+        .message.agent { align-self: flex-start; background: rgba(30,41,59,0.6); border: 1px solid rgba(99,102,241,0.15); border-bottom-left-radius: 4px; backdrop-filter: blur(10px); }
+        .message.agent code { background: rgba(99,102,241,0.15); padding: 2px 7px; border-radius: 5px; font-size: 12px; font-family: 'JetBrains Mono', monospace; color: #c4b5fd; }
+        .message.agent pre { background: #0a0a14; padding: 14px; border-radius: 10px; margin: 10px 0; overflow-x: auto; border: 1px solid rgba(99,102,241,0.15); position: relative; }
+        .message.agent pre code { background: none; padding: 0; font-size: 12px; line-height: 1.6; color: #e2e8f0; }
+        .copy-btn { position: absolute; top: 8px; right: 8px; background: rgba(99,102,241,0.2); border: 1px solid rgba(99,102,241,0.3); border-radius: 6px; padding: 4px 10px; color: #818cf8; font-size: 10px; cursor: pointer; opacity: 0; transition: all 0.15s; font-weight: 500; }
         .message.agent pre:hover .copy-btn { opacity: 1; }
-        .copy-btn:hover { background: #475569; color: #e2e8f0; }
-        .copy-btn.copied { background: #10b981; color: white; }
-        .message.agent table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13px; }
-        .message.agent th { background: #0f172a; padding: 8px 12px; text-align: left; border-bottom: 2px solid #334155; color: #94a3b8; font-weight: 600; }
-        .message.agent td { padding: 8px 12px; border-bottom: 1px solid #1e293b; }
-        .message.agent tr:hover td { background: #0f172a; }
+        .copy-btn.copied { background: #059669; border-color: #059669; color: white; }
+        .message.agent table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 13px; }
+        .message.agent th { background: rgba(99,102,241,0.1); padding: 10px 14px; text-align: left; border-bottom: 2px solid rgba(99,102,241,0.2); color: #a5b4fc; font-weight: 600; font-size: 11px; text-transform: uppercase; }
+        .message.agent td { padding: 10px 14px; border-bottom: 1px solid rgba(99,102,241,0.08); }
         .message.agent ul { margin: 8px 0; padding-left: 20px; list-style: disc; }
-        .message.agent li { margin: 2px 0; line-height: 1.5; }
-        .message.agent h3, .message.agent h4 { margin: 12px 0 6px; color: #60a5fa; }
-        .typing { align-self: flex-start; padding: 14px 18px; background: #1e293b; border-radius: 16px; }
-        .typing span { display: inline-block; width: 7px; height: 7px; background: #60a5fa; border-radius: 50%; animation: bounce 1.4s infinite; margin: 0 2px; }
+        .message.agent li { margin: 3px 0; line-height: 1.5; }
+        .message.agent h3, .message.agent h4 { margin: 12px 0 6px; color: #a5b4fc; }
+        .typing { align-self: flex-start; padding: 14px 18px; background: rgba(30,41,59,0.6); border: 1px solid rgba(99,102,241,0.15); border-radius: 18px; display: flex; align-items: center; gap: 10px; }
+        .typing span { display: inline-block; width: 7px; height: 7px; background: #818cf8; border-radius: 50%; animation: bounce 1.4s infinite; }
         .typing span:nth-child(2) { animation-delay: 0.2s; }
         .typing span:nth-child(3) { animation-delay: 0.4s; }
+        .typing .timer { font-size: 11px; color: #64748b; margin-left: 8px; }
         @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
 
         /* Input */
-        .input-area { padding: 16px 24px; border-top: 1px solid #1e293b; background: #0f1520; }
+        .input-area { padding: 18px 24px; border-top: 1px solid rgba(99,102,241,0.1); background: rgba(26,26,46,0.5); }
         .input-wrapper { display: flex; gap: 10px; align-items: end; }
-        .input-wrapper textarea { flex: 1; background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 12px 16px; color: #e2e8f0; font-size: 14px; resize: none; height: 46px; font-family: inherit; transition: border-color 0.15s; }
-        .input-wrapper textarea:focus { outline: none; border-color: #60a5fa; }
-        .input-wrapper button { background: #1d4ed8; border: none; border-radius: 10px; width: 46px; height: 46px; color: white; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background 0.15s; }
-        .input-wrapper button:hover { background: #2563eb; }
-        .input-wrapper button:disabled { background: #334155; cursor: not-allowed; }
+        .input-wrapper textarea { flex: 1; background: rgba(30,41,59,0.6); border: 1.5px solid rgba(99,102,241,0.2); border-radius: 14px; padding: 13px 18px; color: #e2e8f0; font-size: 14px; resize: none; height: 48px; font-family: inherit; transition: all 0.2s; }
+        .input-wrapper textarea:focus { outline: none; border-color: #818cf8; box-shadow: 0 0 0 3px rgba(129,140,248,0.1); }
+        .input-wrapper button { background: linear-gradient(135deg, #667eea, #764ba2); border: none; border-radius: 12px; width: 48px; height: 48px; color: white; font-size: 18px; cursor: pointer; box-shadow: 0 4px 12px rgba(102,126,234,0.3); transition: all 0.2s; }
+        .input-wrapper button:hover { transform: translateY(-1px); }
+        .input-wrapper button:disabled { background: #334155; box-shadow: none; cursor: not-allowed; }
 
         /* Modal */
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 100; align-items: center; justify-content: center; }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); z-index: 100; align-items: center; justify-content: center; }
         .modal-overlay.show { display: flex; }
-        .modal { background: #1e293b; border: 1px solid #334155; border-radius: 16px; padding: 28px; width: 440px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
-        .modal h2 { margin-bottom: 20px; font-size: 16px; font-weight: 600; }
+        .modal { background: #1e293b; border: 1px solid rgba(99,102,241,0.2); border-radius: 20px; padding: 30px; width: 440px; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+        .modal h2 { margin-bottom: 22px; font-size: 17px; background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .modal label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #94a3b8; margin-bottom: 14px; font-weight: 500; }
-        .modal input { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px 14px; color: #e2e8f0; font-size: 13px; transition: border-color 0.15s; }
-        .modal input:focus { outline: none; border-color: #60a5fa; }
-        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
-        .modal .btn-save { flex: 1; background: #10b981; border: none; border-radius: 8px; padding: 10px; color: white; font-size: 13px; font-weight: 500; cursor: pointer; }
-        .modal .btn-save:hover { background: #059669; }
-        .modal .btn-cancel { flex: 1; background: #334155; border: none; border-radius: 8px; padding: 10px; color: #94a3b8; font-size: 13px; cursor: pointer; }
-        .modal .btn-cancel:hover { background: #475569; }
-        .tabs { display: flex; gap: 4px; margin-bottom: 18px; background: #0f172a; border-radius: 8px; padding: 4px; }
-        .tab { flex: 1; background: transparent; border: none; border-radius: 6px; padding: 8px; color: #94a3b8; font-size: 12px; cursor: pointer; font-weight: 500; transition: all 0.15s; }
-        .tab.active { background: #1d4ed8; color: white; }
+        .modal input { background: rgba(15,23,42,0.6); border: 1.5px solid #334155; border-radius: 10px; padding: 10px 14px; color: #e2e8f0; font-size: 13px; transition: all 0.2s; }
+        .modal input:focus { outline: none; border-color: #818cf8; box-shadow: 0 0 0 3px rgba(129,140,248,0.15); }
+        .modal-actions { display: flex; gap: 10px; margin-top: 22px; }
+        .modal .btn-save { flex: 1; background: linear-gradient(135deg, #667eea, #764ba2); border: none; border-radius: 10px; padding: 11px; color: white; font-size: 13px; font-weight: 600; cursor: pointer; }
+        .modal .btn-cancel { flex: 1; background: #334155; border: none; border-radius: 10px; padding: 11px; color: #94a3b8; font-size: 13px; cursor: pointer; }
+        .tabs { display: flex; gap: 4px; margin-bottom: 18px; background: rgba(15,23,42,0.6); border-radius: 10px; padding: 4px; }
+        .tab { flex: 1; background: transparent; border: none; border-radius: 8px; padding: 9px; color: #94a3b8; font-size: 12px; cursor: pointer; font-weight: 500; transition: all 0.15s; }
+        .tab.active { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
         .tab-content { display: flex; flex-direction: column; }
         .tab-content.hidden { display: none; }
-        .hint { font-size: 11px; color: #64748b; margin-top: 4px; }
-        #credStatus, #projectStatus { margin-top: 14px; font-size: 12px; padding: 8px 12px; border-radius: 6px; }
-        .status-ok { background: #052e16; color: #86efac; }
-        .status-err { background: #2d0a0a; color: #fca5a5; }
+        #credStatus, #projectStatus { margin-top: 14px; font-size: 12px; padding: 8px 14px; border-radius: 8px; }
+        .knowledge-content { background: rgba(15,23,42,0.6); border: 1px solid rgba(99,102,241,0.15); border-radius: 10px; padding: 14px; font-size: 12px; white-space: pre-wrap; max-height: 400px; overflow-y: auto; font-family: 'JetBrains Mono', monospace; color: #c4b5fd; }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <div class="sidebar-header">
-            <h1>Infra Agent</h1>
+
+    <!-- Login Screen -->
+    <div class="login-screen" id="loginScreen">
+        <div class="login-box">
+            <h2>🔐 Infra Agent</h2>
+            <div class="tabs" style="margin-bottom:20px">
+                <button class="tab active" onclick="switchAuthTab('signin')">Sign In</button>
+                <button class="tab" onclick="switchAuthTab('signup')">Sign Up</button>
+            </div>
+            <div id="authSignin">
+                <label>Email<input type="email" id="loginEmail" placeholder="you@company.com"></label>
+                <label>Password<input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></label>
+                <label id="otpField" class="hidden">OTP Code<input type="text" id="loginOtp" placeholder="6-digit code from email" maxlength="6" onkeydown="if(event.key==='Enter')doLogin()"></label>
+                <button onclick="doLogin()">Sign In</button>
+            </div>
+            <div id="authSignup" class="hidden">
+                <label>Name<input type="text" id="signupName" placeholder="Your name"></label>
+                <label>Email<input type="email" id="signupEmail" placeholder="you@company.com"></label>
+                <label>Password<input type="password" id="signupPass" placeholder="Min 8 characters" onkeydown="if(event.key==='Enter')doSignup()"></label>
+                <button onclick="doSignup()">Create Admin Account</button>
+                <p style="font-size:11px;color:#64748b;margin-top:8px;text-align:center">Sign up is only available for the first admin. Other users are added by admin.</p>
+            </div>
+            <div id="loginError"></div>
         </div>
+    </div>
+
+    <!-- App (hidden until login) -->
+    <div class="sidebar hidden" id="appSidebar">
+        <div class="sidebar-header"><h1>Infra Agent</h1></div>
         <div class="project-section">
             <h3>Projects</h3>
             <div id="projectList"></div>
         </div>
         <div class="sidebar-footer">
-            <button class="sidebar-btn primary" onclick="openNewProject()">+ New Project</button>
-            <button class="sidebar-btn" onclick="deleteProject()" style="color:#ef4444">🗑 Delete Project</button>
+            <button class="sidebar-btn primary hidden" id="btnNewProject" onclick="openNewProject()">+ New Project</button>
+            <button class="sidebar-btn" onclick="openKnowledge()">📚 Knowledge Base</button>
             <button class="sidebar-btn" onclick="openCreds()">⚙️ AWS Credentials</button>
+            <button class="sidebar-btn danger hidden" id="btnDeleteProject" onclick="deleteProject()">🗑 Delete Project</button>
+            <button class="sidebar-btn" onclick="doLogout()" style="margin-top:8px;color:#64748b">↩ Logout</button>
+            <a href="/admin.html" class="sidebar-btn hidden" id="adminLink" style="text-decoration:none;text-align:center;color:#a78bfa">👑 Admin Panel</a>
         </div>
     </div>
 
-    <div class="main">
+    <div class="main hidden" id="appMain">
         <div class="topbar">
-            <span class="project-name" id="currentProjectName">No project selected</span>
-            <span class="status" id="connStatus" style="display:none">Connected</span>
+            <span class="project-name" id="currentProjectName">No project</span>
+            <div class="topbar-actions">
+                <button onclick="clearChat()">🧹 Clear Chat</button>
+                <button onclick="exportKnowledge()">📥 Export</button>
+                <span class="status" id="connStatus" style="display:none">Connected</span>
+            </div>
         </div>
-        <div class="chat-container" id="chat" style="position:relative;"></div>
+        <div class="chat-container" id="chat"></div>
         <div class="input-area">
             <div class="input-wrapper">
                 <textarea id="input" placeholder="Ask about your infrastructure..." onkeydown="handleKey(event)"></textarea>
@@ -128,8 +170,8 @@
         <div class="modal">
             <h2>Create New Project</h2>
             <label>Project Name<input type="text" id="projectName" placeholder="e.g. cash-invoice"></label>
-            <label>AWS Region<input type="text" id="projectRegion" placeholder="us-east-1" value="us-east-1"></label>
-            <label>Description<input type="text" id="projectDesc" placeholder="Brief description (optional)"></label>
+            <label>AWS Region<input type="text" id="projectRegion" value="us-east-1"></label>
+            <label>Description<input type="text" id="projectDesc" placeholder="Optional"></label>
             <div class="modal-actions">
                 <button class="btn-save" onclick="createProject()">Create</button>
                 <button class="btn-cancel" onclick="closeNewProject()">Cancel</button>
@@ -149,19 +191,18 @@
             </div>
             <div class="tab-content" id="tab-iam">
                 <label>Access Key ID<input type="text" id="accessKey" placeholder="AKIA..."></label>
-                <label>Secret Access Key<input type="password" id="secretKey" placeholder="Enter secret key"></label>
-                <label>Session Token<input type="text" id="sessionToken" placeholder="Optional — for temporary credentials"></label>
-                <label>Region<input type="text" id="iamRegion" placeholder="us-east-1" value="us-east-1"></label>
+                <label>Secret Access Key<input type="password" id="secretKey"></label>
+                <label>Session Token<input type="text" id="sessionToken" placeholder="Optional"></label>
+                <label>Region<input type="text" id="iamRegion" value="us-east-1"></label>
             </div>
             <div class="tab-content hidden" id="tab-sso">
-                <label>SSO Start URL<input type="text" id="ssoUrl" placeholder="https://my-org.awsapps.com/start"></label>
-                <label>SSO Region<input type="text" id="ssoRegion" placeholder="us-east-1"></label>
-                <label>Account ID<input type="text" id="ssoAccount" placeholder="123456789012"></label>
-                <label>Role Name<input type="text" id="ssoRole" placeholder="AdministratorAccess"></label>
+                <label>SSO Start URL<input type="text" id="ssoUrl"></label>
+                <label>SSO Region<input type="text" id="ssoRegion" value="us-east-1"></label>
+                <label>Account ID<input type="text" id="ssoAccount"></label>
+                <label>Role Name<input type="text" id="ssoRole"></label>
             </div>
             <div class="tab-content hidden" id="tab-profile">
                 <label>Profile Name<input type="text" id="profileName" placeholder="default"></label>
-                <p class="hint">Uses existing profile from ~/.aws/credentials on the server</p>
             </div>
             <div class="modal-actions">
                 <button class="btn-save" onclick="saveCreds()">Save & Connect</button>
@@ -171,14 +212,77 @@
         </div>
     </div>
 
+    <!-- Knowledge Modal -->
+    <div class="modal-overlay" id="knowledgeModal">
+        <div class="modal" style="width:600px">
+            <h2>📚 Knowledge Base</h2>
+            <div class="knowledge-content" id="knowledgeContent">Loading...</div>
+            <div class="modal-actions">
+                <button class="btn-save" onclick="exportKnowledge()">📥 Export as Markdown</button>
+                <button class="btn-cancel" onclick="closeKnowledge()">Close</button>
+            </div>
+        </div>
+    </div>
+
+
     <script>
+        const API_URL = '/api';
+        let token = localStorage.getItem('token');
+        let currentProject = '';
+        let timerInterval = null;
+
+        function headers() { return { 'Content-Type': 'application/json', 'Authorization': token }; }
+
+        // --- Auth ---
+        if (token) { showApp(); } else { document.getElementById('loginScreen').classList.remove('hidden'); }
+
+        function switchAuthTab(tab) {
+            document.getElementById('authSignin').classList.toggle('hidden', tab !== 'signin');
+            document.getElementById('authSignup').classList.toggle('hidden', tab !== 'signup');
+            document.querySelectorAll('.login-box .tab').forEach((t, i) => t.classList.toggle('active', (tab === 'signin' && i === 0) || (tab === 'signup' && i === 1)));
+            document.getElementById('loginError').textContent = '';
+        }
+
+        async function doLogin() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPass').value;
+            const otp = document.getElementById('loginOtp').value;
+            const res = await fetch(`${API_URL}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password, otp: otp || undefined }) });
+            const data = await res.json();
+            if (data.success) { token = data.token; localStorage.setItem('token', token); localStorage.setItem('role', data.role); showApp(); }
+            else if (data.otpSent) { document.getElementById('otpField').classList.remove('hidden'); document.getElementById('loginError').textContent = 'OTP sent to your email.'; document.getElementById('loginError').style.color = '#34d399'; }
+            else { document.getElementById('loginError').textContent = data.error; document.getElementById('loginError').style.color = '#f87171'; }
+        }
+
+        async function doSignup() {
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPass').value;
+            const res = await fetch(`${API_URL}/signup`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, email, password }) });
+            const data = await res.json();
+            if (data.success) { token = data.token; localStorage.setItem('token', token); localStorage.setItem('role', data.role); showApp(); }
+            else { document.getElementById('loginError').textContent = data.error; }
+        }
+
+        function doLogout() { localStorage.removeItem('token'); localStorage.removeItem('role'); token = null; location.reload(); }
+
+        function showApp() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('appSidebar').classList.remove('hidden');
+            document.getElementById('appMain').classList.remove('hidden');
+            const role = localStorage.getItem('role');
+            if (role === 'admin') {
+                document.getElementById('adminLink').classList.remove('hidden');
+                document.getElementById('btnNewProject').classList.remove('hidden');
+                document.getElementById('btnDeleteProject').classList.remove('hidden');
+            }
+            loadProjects();
+        }
+
+        // --- Chat ---
         const chat = document.getElementById('chat');
         const input = document.getElementById('input');
         const sendBtn = document.getElementById('sendBtn');
-        const API_URL = '/api';
-        let currentProject = '';
-
-        loadProjects();
 
         function addMessage(text, role) {
             const div = document.createElement('div');
@@ -189,108 +293,82 @@
         }
 
         function formatMessage(text) {
-            // Re-add code fences: detect "json\n{" or "bash\n" patterns without backticks
-            let fenced = text.replace(/^(json|yaml|bash|python|hcl|sh|sql|xml)\n(\{[\s\S]*?\n\}|\[[\s\S]*?\n\]|[\s\S]*?)(?=\n\n|\n[A-Z]|\n\d+\.|\nNeed|\nWant|\nLet|$)/gm, '```$1\n$2\n```');
-
-            // Code blocks FIRST (before any escaping)
+            let fenced = text.replace(/^(json|yaml|bash|python|hcl|sh|sql|xml)\n(\{[\s\S]*?\n\}|\[[\s\S]*?\n\]|[\s\S]*?)(?=\n[A-Z]|\n\d+\.|\nNeed|\nWant|\nLet|$)/gm, '```$1\n$2\n```');
             const codeBlocks = [];
-            let processed = fenced.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+            let processed = fenced.replace(/```(\w*)\n([\s\S]*?)```/g, (m, lang, code) => {
                 const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 codeBlocks.push(`<pre><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>${escaped}</code></pre>`);
-                return `__CODEBLOCK_${codeBlocks.length - 1}__`;
+                return `__CB${codeBlocks.length - 1}__`;
             });
-            // Now escape remaining HTML
             processed = processed.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            // Inline code
             processed = processed.replace(/`([^`]+)`/g, '<code>$1</code>');
-            // Bold
             processed = processed.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-            // Tables
             processed = processed.replace(/(\|.+\|[\n\r]+\|[-| :]+\|[\n\r]+((\|.+\|[\n\r]*)+))/g, (match) => {
                 const rows = match.trim().split('\n').filter(r => !r.match(/^\|[\s-:|]+\|$/));
-                let table = '<table>';
-                rows.forEach((row, i) => {
-                    const cells = row.split('|').filter(c => c.trim());
-                    const tag = i === 0 ? 'th' : 'td';
-                    table += '<tr>' + cells.map(c => `<${tag}>${c.trim()}</${tag}>`).join('') + '</tr>';
-                });
-                return table + '</table>';
+                let t = '<table>';
+                rows.forEach((row, i) => { const cells = row.split('|').filter(c => c.trim()); const tag = i === 0 ? 'th' : 'td'; t += '<tr>' + cells.map(c => `<${tag}>${c.trim()}</${tag}>`).join('') + '</tr>'; });
+                return t + '</table>';
             });
-            // Status icons
             processed = processed.replace(/✅/g, '<span style="color:#10b981">✅</span>');
-            processed = processed.replace(/❌/g, '<span style="color:#ef4444">❌</span>');
             processed = processed.replace(/⚠️/g, '<span style="color:#f59e0b">⚠️</span>');
-            // Headings
             processed = processed.replace(/^### (.+)$/gm, '<h4>$1</h4>');
             processed = processed.replace(/^## (.+)$/gm, '<h3>$1</h3>');
-            // Lists — handle items separated by blank lines
-            processed = processed.replace(/(\d+\. .+\n?\n?)+/g, (match) => {
-                const items = match.trim().split(/\n\n?/).filter(l => l.match(/^\d+\./));
-                if (items.length > 0) return '<ul>' + items.map(i => `<li>${i.replace(/^\d+\.\s*/, '')}</li>`).join('') + '</ul>';
-                return match;
-            });
             processed = processed.replace(/^- (.+)$/gm, '<li>$1</li>');
-            processed = processed.replace(/(<li>.*<\/li>[\n]*)+/g, (m) => m.includes('<ul>') ? m : `<ul>${m}</ul>`);
-            // Line breaks — collapse double newlines to single (kiro adds extra spacing)
-            processed = processed.replace(/\n\n/g, '\n');
+            processed = processed.replace(/(<li>.*<\/li>[\n]*)+/g, (m) => `<ul>${m}</ul>`);
             processed = processed.replace(/\n/g, '<br>');
-            // Clean up
             processed = processed.replace(/<br><(table|pre|ul|h[34])/g, '<$1');
             processed = processed.replace(/<\/(table|pre|ul|h[34])><br>/g, '</$1>');
-            // Restore code blocks
-            codeBlocks.forEach((block, i) => {
-                processed = processed.replace(`__CODEBLOCK_${i}__`, block);
-            });
+            codeBlocks.forEach((b, i) => { processed = processed.replace(`__CB${i}__`, b); });
             return processed;
         }
 
-        function showTyping() { const d = document.createElement('div'); d.className = 'typing'; d.id = 'typing'; d.innerHTML = '<span></span><span></span><span></span>'; chat.appendChild(d); chat.scrollTop = chat.scrollHeight; }
-        function hideTyping() { const el = document.getElementById('typing'); if (el) el.remove(); }
+        function showTyping() {
+            const d = document.createElement('div'); d.className = 'typing'; d.id = 'typing';
+            d.innerHTML = '<span></span><span></span><span></span><span class="timer" id="loadTimer">0s</span>';
+            chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
+            let sec = 0;
+            timerInterval = setInterval(() => { sec++; const el = document.getElementById('loadTimer'); if (el) el.textContent = sec + 's'; }, 1000);
+        }
+        function hideTyping() { clearInterval(timerInterval); const el = document.getElementById('typing'); if (el) el.remove(); }
 
         async function send() {
             const text = input.value.trim();
             if (!text || !currentProject) return;
-            addMessage(text, 'user');
-            input.value = '';
-            sendBtn.disabled = true;
-            showTyping();
+            addMessage(text, 'user'); input.value = ''; sendBtn.disabled = true; showTyping();
             try {
-                const res = await fetch(`${API_URL}/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: text, project: currentProject }) });
+                const res = await fetch(`${API_URL}/chat`, { method: 'POST', headers: headers(), body: JSON.stringify({ message: text, project: currentProject }) });
+                if (res.status === 401) { doLogout(); return; }
+                if (res.status === 429) { hideTyping(); addMessage('⚠️ Rate limit exceeded. Wait a moment.', 'agent'); sendBtn.disabled = false; return; }
                 const data = await res.json();
-                hideTyping();
-                addMessage(data.response, 'agent');
+                hideTyping(); addMessage(data.response, 'agent');
             } catch (e) { hideTyping(); addMessage('⚠️ Connection error.', 'agent'); }
-            sendBtn.disabled = false;
-            input.focus();
+            sendBtn.disabled = false; input.focus();
         }
 
         function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
+        function copyCode(btn) { navigator.clipboard.writeText(btn.nextElementSibling.textContent).then(() => { btn.textContent = '✓'; btn.classList.add('copied'); setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000); }); }
 
-        function copyCode(btn) {
-            const code = btn.nextElementSibling.textContent;
-            navigator.clipboard.writeText(code).then(() => {
-                btn.textContent = '✓ Copied';
-                btn.classList.add('copied');
-                setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
-            });
+        function clearChat() {
+            if (!confirm('Clear chat messages? (Knowledge base is preserved)')) return;
+            chat.innerHTML = '';
+            fetch(`${API_URL}/reset`, { method: 'POST', headers: headers(), body: JSON.stringify({ project: currentProject }) });
         }
 
         // --- Projects ---
         async function loadProjects() {
-            try {
-                const res = await fetch(`${API_URL}/projects`);
-                const data = await res.json();
-                const list = document.getElementById('projectList');
-                list.innerHTML = '';
-                data.projects.forEach(p => {
-                    const div = document.createElement('div');
-                    div.className = 'project-item' + (p.name === currentProject ? ' active' : '');
-                    div.innerHTML = `<span class="dot"></span>${p.name}`;
-                    div.onclick = () => selectProject(p.name);
-                    list.appendChild(div);
-                });
-                if (!currentProject && data.projects.length > 0) selectProject(data.projects[0].name);
-            } catch (e) {}
+            const res = await fetch(`${API_URL}/projects`, { headers: headers() });
+            if (res.status === 401) { doLogout(); return; }
+            const data = await res.json();
+            const list = document.getElementById('projectList');
+            list.innerHTML = '';
+            data.projects.forEach(p => {
+                const div = document.createElement('div');
+                div.className = 'project-item' + (p.name === currentProject ? ' active' : '');
+                div.innerHTML = `<span class="dot"></span>${p.name}`;
+                div.onclick = () => selectProject(p.name);
+                list.appendChild(div);
+            });
+            if (!currentProject && data.projects.length > 0) selectProject(data.projects[0].name);
         }
 
         function selectProject(name) {
@@ -299,72 +377,64 @@
             chat.innerHTML = '';
             document.querySelectorAll('.project-item').forEach(el => el.classList.toggle('active', el.textContent === name));
             loadCredStatus();
-            // Load chat history
-            fetch(`${API_URL}/history/${name}`).then(r => r.json()).then(data => {
+            fetch(`${API_URL}/history/${name}`, { headers: headers() }).then(r => r.json()).then(data => {
                 if (data.history) data.history.forEach(m => addMessage(m.content, m.role));
             }).catch(() => {});
         }
 
         async function loadCredStatus() {
-            try {
-                const res = await fetch(`${API_URL}/credentials/${currentProject}`);
-                const data = await res.json();
-                const el = document.getElementById('connStatus');
-                if (data.configured) { el.style.display = 'flex'; el.textContent = 'Connected'; }
-                else { el.style.display = 'flex'; el.textContent = 'No AWS credentials'; el.style.color = '#f59e0b'; }
-            } catch {}
+            const res = await fetch(`${API_URL}/credentials/${currentProject}`, { headers: headers() });
+            const data = await res.json();
+            const el = document.getElementById('connStatus');
+            if (data.configured) { el.style.display = 'flex'; el.textContent = 'Connected'; el.style.color = '#10b981'; }
+            else { el.style.display = 'flex'; el.textContent = 'No AWS creds'; el.style.color = '#f59e0b'; }
         }
 
         function openNewProject() { document.getElementById('newProjectModal').classList.add('show'); }
         function closeNewProject() { document.getElementById('newProjectModal').classList.remove('show'); }
-
-        async function deleteProject() {
-            if (!currentProject) return;
-            if (!confirm(`Delete project "${currentProject}"? This removes all data, chat history, and knowledge permanently.`)) return;
-            try {
-                const res = await fetch(`${API_URL}/projects/${currentProject}`, { method: 'DELETE' });
-                const data = await res.json();
-                if (data.success) { currentProject = ''; chat.innerHTML = ''; await loadProjects(); }
-                else alert('Failed: ' + data.error);
-            } catch (e) { alert('Backend not reachable'); }
-        }
 
         async function createProject() {
             const name = document.getElementById('projectName').value.trim();
             const region = document.getElementById('projectRegion').value.trim() || 'us-east-1';
             const desc = document.getElementById('projectDesc').value.trim();
             const status = document.getElementById('projectStatus');
-            if (!name) { status.className = 'status-err'; status.textContent = 'Name required'; return; }
-            status.className = ''; status.style.color = '#eab308'; status.textContent = 'Creating...';
-            try {
-                const res = await fetch(`${API_URL}/projects`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, region, description: desc }) });
-                const data = await res.json();
-                if (data.success) { status.className = 'status-ok'; status.textContent = '✓ Created!'; await loadProjects(); selectProject(name); setTimeout(closeNewProject, 800); }
-                else { status.className = 'status-err'; status.textContent = data.error; }
-            } catch (e) { status.className = 'status-err'; status.textContent = 'Backend not reachable'; }
+            if (!name) { status.textContent = 'Name required'; status.style.color = '#ef4444'; return; }
+            const res = await fetch(`${API_URL}/projects`, { method: 'POST', headers: headers(), body: JSON.stringify({ name, region, description: desc }) });
+            const data = await res.json();
+            if (data.success) { status.textContent = '✓ Created!'; status.style.color = '#10b981'; await loadProjects(); selectProject(name); setTimeout(closeNewProject, 800); }
+            else { status.textContent = data.error; status.style.color = '#ef4444'; }
+        }
+
+        async function deleteProject() {
+            if (!currentProject || !confirm(`Delete "${currentProject}"? All data will be permanently removed.`)) return;
+            await fetch(`${API_URL}/projects/${currentProject}`, { method: 'DELETE', headers: headers() });
+            currentProject = ''; chat.innerHTML = ''; await loadProjects();
+        }
+
+        // --- Knowledge ---
+        async function openKnowledge() {
+            document.getElementById('knowledgeModal').classList.add('show');
+            const res = await fetch(`${API_URL}/knowledge/${currentProject}`, { headers: headers() });
+            const data = await res.json();
+            document.getElementById('knowledgeContent').textContent = data.knowledge || 'No knowledge stored yet. Use the agent and it will learn automatically.';
+        }
+        function closeKnowledge() { document.getElementById('knowledgeModal').classList.remove('show'); }
+
+        function exportKnowledge() {
+            fetch(`${API_URL}/knowledge/${currentProject}/export`, { headers: headers() })
+                .then(r => r.blob())
+                .then(blob => { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${currentProject}-knowledge.md`; a.click(); });
         }
 
         // --- Credentials ---
         let activeTab = 'iam';
         function openCreds() {
             document.getElementById('credModal').classList.add('show');
-            fetch(`${API_URL}/credentials/${currentProject}`)
-                .then(r => r.json())
-                .then(data => {
-                    const status = document.getElementById('credStatus');
-                    if (data.configured) {
-                        status.className = 'status-ok';
-                        if (data.type === 'iam') {
-                            document.getElementById('accessKey').value = data.accessKey;
-                            document.getElementById('iamRegion').value = data.region || 'us-east-1';
-                            status.textContent = '✓ Connected — ' + data.accessKey;
-                        } else {
-                            document.getElementById('profileName').value = data.profile;
-                            status.textContent = '✓ Using profile: ' + data.profile;
-                            switchTab('profile');
-                        }
-                    } else { status.className = ''; status.textContent = ''; }
-                }).catch(() => {});
+            fetch(`${API_URL}/credentials/${currentProject}`, { headers: headers() }).then(r => r.json()).then(data => {
+                const status = document.getElementById('credStatus');
+                if (data.configured) { status.textContent = '✓ Connected — ' + (data.accessKey || data.profile); status.style.color = '#10b981'; if (data.region) document.getElementById('iamRegion').value = data.region; }
+                else { status.textContent = ''; }
+            }).catch(() => {});
         }
         function closeCreds() { document.getElementById('credModal').classList.remove('show'); }
         function switchTab(tab) {
@@ -380,13 +450,11 @@
             else if (activeTab === 'sso') { creds.ssoUrl = document.getElementById('ssoUrl').value; creds.ssoRegion = document.getElementById('ssoRegion').value; creds.accountId = document.getElementById('ssoAccount').value; creds.roleName = document.getElementById('ssoRole').value; }
             else { creds.profile = document.getElementById('profileName').value || 'default'; }
             const status = document.getElementById('credStatus');
-            status.className = ''; status.style.color = '#eab308'; status.textContent = 'Connecting...';
-            try {
-                const res = await fetch(`${API_URL}/credentials`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(creds) });
-                const data = await res.json();
-                if (data.success) { status.className = 'status-ok'; status.textContent = '✓ ' + data.identity; loadCredStatus(); setTimeout(closeCreds, 1500); }
-                else { status.className = 'status-err'; status.textContent = data.error; }
-            } catch (e) { status.className = 'status-err'; status.textContent = 'Backend not reachable'; }
+            status.textContent = 'Connecting...'; status.style.color = '#eab308';
+            const res = await fetch(`${API_URL}/credentials`, { method: 'POST', headers: headers(), body: JSON.stringify(creds) });
+            const data = await res.json();
+            if (data.success) { status.textContent = '✓ ' + data.identity; status.style.color = '#10b981'; loadCredStatus(); setTimeout(closeCreds, 1500); }
+            else { status.textContent = data.error; status.style.color = '#ef4444'; }
         }
     </script>
 </body>

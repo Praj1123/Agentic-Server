@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin — Infra Agent</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh; padding: 24px; }
+
+        .nav { background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-radius: 16px; padding: 16px 28px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; box-shadow: 0 4px 24px rgba(0,0,0,0.1); }
+        .nav h1 { font-size: 18px; font-weight: 700; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .nav a { color: #667eea; font-size: 13px; text-decoration: none; padding: 8px 16px; border: 1.5px solid #667eea; border-radius: 8px; font-weight: 500; transition: all 0.2s; }
+        .nav a:hover { background: #667eea; color: white; }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        /* Stats */
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-radius: 16px; padding: 24px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-2px); }
+        .stat-card .icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 14px; }
+        .stat-card:nth-child(1) .icon { background: linear-gradient(135deg, #a78bfa, #7c3aed); }
+        .stat-card:nth-child(2) .icon { background: linear-gradient(135deg, #60a5fa, #2563eb); }
+        .stat-card:nth-child(3) .icon { background: linear-gradient(135deg, #34d399, #059669); }
+        .stat-card .num { font-size: 32px; font-weight: 700; color: #1e293b; }
+        .stat-card .label { font-size: 13px; color: #64748b; margin-top: 4px; }
+
+        /* Sections */
+        .section { background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-radius: 16px; padding: 28px; margin-bottom: 20px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); }
+        .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .section-header h2 { font-size: 15px; font-weight: 600; color: #1e293b; }
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 12px 16px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: #64748b; font-weight: 600; border-bottom: 2px solid #f1f5f9; }
+        td { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; font-size: 13px; color: #334155; }
+        tr:hover td { background: #faf5ff; }
+        .badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+        .badge.admin { background: linear-gradient(135deg, #ede9fe, #ddd6fe); color: #6d28d9; }
+        .badge.user { background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #15803d; }
+        .project-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+        .project-tag { background: linear-gradient(135deg, #dbeafe, #bfdbfe); color: #1d4ed8; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 500; display: inline-flex; align-items: center; gap: 6px; }
+        .remove-tag { cursor: pointer; opacity: 0.5; font-weight: bold; }
+        .remove-tag:hover { opacity: 1; color: #dc2626; }
+        .btn-assign { background: none; border: 1.5px dashed #a78bfa; border-radius: 6px; padding: 3px 10px; font-size: 10px; color: #7c3aed; cursor: pointer; margin-top: 6px; font-weight: 500; }
+        .btn-assign:hover { background: #ede9fe; border-style: solid; }
+        .assign-dropdown { background: white; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 10px; margin-top: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+        .assign-dropdown label { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 5px 6px; border-radius: 6px; cursor: pointer; }
+        .assign-dropdown label:hover { background: #f1f5f9; }
+        .assign-dropdown input { accent-color: #7c3aed; }
+
+        /* Forms */
+        .form-row { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label { font-size: 11px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-group input, .form-group select { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 10px 14px; font-size: 13px; color: #1e293b; transition: all 0.2s; }
+        .form-group input:focus, .form-group select:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102,126,234,0.15); }
+        .checkbox-group { position: relative; }
+        .checkbox-toggle { background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 8px 14px; font-size: 12px; color: #334155; cursor: pointer; min-width: 180px; display: flex; justify-content: space-between; align-items: center; }
+        .checkbox-toggle:hover { border-color: #667eea; }
+        .checkbox-dropdown { display: none; position: absolute; top: 100%; left: 0; background: white; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 8px; margin-top: 4px; min-width: 200px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); z-index: 10; max-height: 150px; overflow-y: auto; }
+        .checkbox-dropdown.open { display: block; }
+        .checkbox-dropdown label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #334155; cursor: pointer; padding: 6px 8px; border-radius: 6px; font-weight: 500; }
+        .checkbox-dropdown label:hover { background: #f1f5f9; }
+        .checkbox-dropdown input[type="checkbox"] { accent-color: #7c3aed; }
+        .selected-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
+        .selected-tag { background: linear-gradient(135deg, #ede9fe, #ddd6fe); color: #6d28d9; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 500; }
+
+        /* Buttons */
+        .btn { padding: 10px 18px; border-radius: 10px; border: none; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .btn-primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; box-shadow: 0 4px 12px rgba(102,126,234,0.3); }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(102,126,234,0.4); }
+        .btn-danger { background: #fee2e2; color: #dc2626; font-weight: 500; }
+        .btn-danger:hover { background: #fecaca; }
+
+        .msg { font-size: 12px; margin-top: 10px; padding: 8px 14px; border-radius: 8px; font-weight: 500; }
+        .msg.ok { background: #dcfce7; color: #15803d; }
+        .msg.err { background: #fee2e2; color: #dc2626; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="nav">
+            <h1>⚙️ Admin Dashboard</h1>
+            <div style="display:flex;gap:12px;align-items:center">
+                <a href="/">← Back to Chat</a>
+                <a href="#" onclick="logout()" style="border-color:#ef4444;color:#ef4444">Logout</a>
+            </div>
+        </div>
+
+        <div class="stats" id="stats"></div>
+
+        <div class="section">
+            <div class="section-header"><h2>➕ Create Project</h2></div>
+            <div class="form-row">
+                <div class="form-group"><label>Project Name</label><input type="text" id="newProjName" placeholder="cash-invoice"></div>
+                <div class="form-group"><label>Region</label><input type="text" id="newProjRegion" value="us-east-1"></div>
+                <button class="btn btn-primary" onclick="createProject()">Create Project</button>
+            </div>
+            <div id="projMsg" class="msg" style="display:none"></div>
+        </div>
+
+        <div class="section">
+            <div class="section-header"><h2>📁 Projects & Usage</h2></div>
+            <table>
+                <thead><tr><th>Project</th><th>Today</th><th>This Week</th><th>Active Users</th><th></th></tr></thead>
+                <tbody id="projectsTable"></tbody>
+            </table>
+        </div>
+
+        <div class="section">
+            <div class="section-header"><h2>👥 Users</h2></div>
+            <table>
+                <thead><tr><th>Email</th><th>Name</th><th>Role</th><th>Projects</th><th></th></tr></thead>
+                <tbody id="usersTable"></tbody>
+            </table>
+            <div style="margin-top:24px;padding-top:24px;border-top:2px solid #f1f5f9">
+                <h3 style="font-size:14px;margin-bottom:14px;color:#475569;font-weight:600">Add New User</h3>
+                <div class="form-row">
+                    <div class="form-group"><label>Email</label><input type="email" id="newEmail" placeholder="user@company.com"></div>
+                    <div class="form-group"><label>Password</label><input type="password" id="newPass" placeholder="min 8 chars"></div>
+                    <div class="form-group"><label>Role</label><select id="newRole"><option value="user">User</option><option value="admin">Admin</option></select></div>
+                    <div class="form-group"><label>Assign Projects</label><div class="checkbox-group"><div class="checkbox-toggle" onclick="toggleDropdown()">Select projects ▾</div><div class="checkbox-dropdown" id="newProjects"></div><div class="selected-tags" id="selectedTags"></div></div></div>
+                    <button class="btn btn-primary" onclick="addUser()">Add User</button>
+                </div>
+                <div id="msg" class="msg" style="display:none"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = '/api';
+        const token = localStorage.getItem('token');
+        if (!token) location.href = '/';
+        function headers() { return { 'Content-Type': 'application/json', 'Authorization': token }; }
+        function logout() { localStorage.removeItem('token'); localStorage.removeItem('role'); location.href = '/'; }
+        loadAll();
+
+        async function loadAll() {
+            const me = await fetch(`${API}/me`, { headers: headers() });
+            if (me.status === 401) { location.href = '/'; return; }
+            const meData = await me.json();
+            if (meData.role !== 'admin') { document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh"><h1 style="color:#dc2626;font-size:20px">🚫 Access Denied — Admin Only</h1></div>'; return; }
+
+            const usersRes = await fetch(`${API}/admin/users`, { headers: headers() });
+            const usersData = await usersRes.json();
+            const tbody = document.getElementById('usersTable');
+            tbody.innerHTML = '';
+            let totalUsers = 0;
+            Object.entries(usersData.users).forEach(([email, u]) => {
+                totalUsers++;
+                let tags;
+                if (u.role === 'admin') { tags = '<span style="color:#7c3aed;font-size:11px;font-weight:500">All projects (admin)</span>'; }
+                else if (u.projects && u.projects.length > 0) { tags = u.projects.map(p => `<span class="project-tag">${p} <span class="remove-tag" onclick="unassignProject('${encodeURIComponent(email)}','${p}')">×</span></span>`).join(''); }
+                else { tags = '<span style="color:#dc2626;font-size:11px">No projects assigned</span>'; }
+                tbody.innerHTML += `<tr><td><strong>${email}</strong></td><td>${u.name || '-'}</td><td><span class="badge ${u.role}">${u.role}</span></td><td><div class="project-tags">${tags}</div>${u.role !== 'admin' ? `<button class="btn-assign" onclick="openAssign('${encodeURIComponent(email)}', this)">+ Assign</button>` : ''}</td><td><button class="btn btn-danger" onclick="removeUser('${encodeURIComponent(email)}')">Remove</button></td></tr>`;
+            });
+
+            const projRes = await fetch(`${API}/projects`, { headers: headers() });
+            const projData = await projRes.json();
+            const ptbody = document.getElementById('projectsTable');
+            ptbody.innerHTML = '';
+            const projSelect = document.getElementById('newProjects');
+            projSelect.innerHTML = '';
+            let totalQueries = 0;
+            for (const p of projData.projects) {
+                projSelect.innerHTML += `<label><input type="checkbox" value="${p.name}" onchange="updateTags()"> ${p.name}</label>`;
+                const uRes = await fetch(`${API}/usage/${p.name}`, { headers: headers() });
+                const uData = await uRes.json();
+                const today = new Date().toISOString().split('T')[0];
+                const todayQ = uData.usage[today]?.queries || 0;
+                const weekQ = Object.entries(uData.usage).filter(([d]) => new Date(d) > new Date(Date.now() - 7*86400000)).reduce((s, [,v]) => s + v.queries, 0);
+                const users = [...new Set(Object.values(uData.usage).flatMap(v => v.users || []))];
+                totalQueries += weekQ;
+                ptbody.innerHTML += `<tr><td><strong>${p.name}</strong></td><td>${todayQ}</td><td>${weekQ}</td><td>${users.length}</td><td><button class="btn btn-danger" onclick="deleteProject('${p.name}')">Delete</button></td></tr>`;
+            }
+
+            document.getElementById('stats').innerHTML = `
+                <div class="stat-card"><div class="icon">👥</div><div class="num">${totalUsers}</div><div class="label">Total Users</div></div>
+                <div class="stat-card"><div class="icon">📁</div><div class="num">${projData.projects.length}</div><div class="label">Projects</div></div>
+                <div class="stat-card"><div class="icon">💬</div><div class="num">${totalQueries}</div><div class="label">Queries This Week</div></div>
+            `;
+        }
+
+        async function addUser() {
+            const email = document.getElementById('newEmail').value;
+            const password = document.getElementById('newPass').value;
+            const role = document.getElementById('newRole').value;
+            const projects = Array.from(document.querySelectorAll('#newProjects input:checked')).map(cb => cb.value);
+            const msg = document.getElementById('msg');
+            const res = await fetch(`${API}/admin/users`, { method: 'POST', headers: headers(), body: JSON.stringify({ email, password, role, projects }) });
+            const data = await res.json();
+            msg.style.display = 'block';
+            msg.className = data.success ? 'msg ok' : 'msg err';
+            msg.textContent = data.success ? `✓ User added${data.emailSent ? ' — credentials emailed' : ''}` : data.error;
+            if (data.success) { document.getElementById('newEmail').value = ''; document.getElementById('newPass').value = ''; loadAll(); }
+        }
+
+        async function removeUser(email) { if (!confirm('Remove this user?')) return; await fetch(`${API}/admin/users/${email}`, { method: 'DELETE', headers: headers() }); loadAll(); }
+        async function unassignProject(email, project) { await fetch(`${API}/admin/users/${email}/projects/${project}`, { method: 'DELETE', headers: headers() }); loadAll(); }
+        async function openAssign(email, btn) {
+            const projRes = await fetch(`${API}/projects`, { headers: headers() });
+            const projData = await projRes.json();
+            const usersRes = await fetch(`${API}/admin/users`, { headers: headers() });
+            const usersData = await usersRes.json();
+            const decodedEmail = decodeURIComponent(email);
+            const currentProjects = usersData.users[decodedEmail]?.projects || [];
+            const available = projData.projects.filter(p => !currentProjects.includes(p.name));
+            
+            if (available.length === 0) { alert('All projects already assigned.'); return; }
+            
+            const row = btn.parentElement;
+            const existing = row.querySelector('.assign-dropdown');
+            if (existing) { existing.remove(); return; }
+            
+            const dropdown = document.createElement('div');
+            dropdown.className = 'assign-dropdown';
+            dropdown.innerHTML = available.map(p => `<label><input type="checkbox" value="${p.name}"> ${p.name}</label>`).join('') + `<button class="btn btn-primary" style="margin-top:6px;padding:5px 12px;font-size:11px" onclick="saveAssign('${email}')">Save</button>`;
+            row.appendChild(dropdown);
+        }
+
+        async function saveAssign(email) {
+            const checkboxes = document.querySelectorAll('.assign-dropdown input:checked');
+            for (const cb of checkboxes) {
+                await fetch(`${API}/admin/users/${email}/projects`, { method: 'POST', headers: headers(), body: JSON.stringify({ project: cb.value }) });
+            }
+            loadAll();
+        }
+        function toggleDropdown() { document.getElementById('newProjects').classList.toggle('open'); }
+        function updateTags() {
+            const checked = Array.from(document.querySelectorAll('#newProjects input:checked')).map(cb => cb.value);
+            document.getElementById('selectedTags').innerHTML = checked.map(p => `<span class="selected-tag">${p}</span>`).join('');
+        }
+        document.addEventListener('click', (e) => { if (!e.target.closest('.checkbox-group')) document.getElementById('newProjects')?.classList.remove('open'); });
+
+        async function createProject() {
+            const name = document.getElementById('newProjName').value.trim();
+            const region = document.getElementById('newProjRegion').value.trim() || 'us-east-1';
+            const msg = document.getElementById('projMsg');
+            if (!name) { msg.style.display = 'block'; msg.className = 'msg err'; msg.textContent = 'Name required'; return; }
+            const res = await fetch(`${API}/projects`, { method: 'POST', headers: headers(), body: JSON.stringify({ name, region }) });
+            const data = await res.json();
+            msg.style.display = 'block'; msg.className = data.success ? 'msg ok' : 'msg err'; msg.textContent = data.success ? '✓ Created' : data.error;
+            if (data.success) { document.getElementById('newProjName').value = ''; loadAll(); }
+        }
+        async function deleteProject(name) { if (!confirm(`Delete "${name}"? All data permanently removed.`)) return; await fetch(`${API}/projects/${name}`, { method: 'DELETE', headers: headers() }); loadAll(); }
+    </script>
+</body>
+</html>

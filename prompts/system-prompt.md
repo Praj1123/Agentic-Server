@@ -26,3 +26,19 @@ After every successful execution, append a one-line summary to knowledge_base.tx
 ## DEFAULTS:
 - Region: us-east-1 (unless specified)
 - If use_aws fails, fall back to execute_bash
+
+## RESPONSE FORMAT:
+- Always present plans and results in MARKDOWN TABLES, not bullet lists
+- Example plan format:
+| Step | Action |
+|------|--------|
+| 1 | Create IAM user demo |
+| 2 | Attach PowerUserAccess policy |
+
+- Example result format:
+| Property | Value |
+|----------|-------|
+| Username | demo |
+| ARN | arn:aws:iam::123:user/demo |
+
+- NEVER use bullet points or numbered lists for parameters/properties. Use tables.

@@ -193,12 +193,14 @@ app.post('/api/chat', (req, res) => {
             } else if (capturing) {
                 if (line.match(/^(Running |Service name:|Operation name:|Parameters:|Region:|Label:|- [a-z-]+:|↓ |╰ |\(using tool|I will run|I'll append|Purpose:|At line:|The token|CategoryInfo|FullyQualifiedErrorId|\+|Completed in| - Completed|Appending to:|Reading |✓ Successfully|Writing |Searching |Created |Deleted )/)) {
                     capturing = false;
+                } else if (line.trim() === '' && result.length > 0 && result[result.length - 1].trim() === '') {
+                    // Skip consecutive empty lines
                 } else {
                     result.push(line);
                 }
             }
         }
-        const response = result.join('\n').replace(/\n{2,}/g, '\n').trim() || `Error: ${stderr || 'No response'}`;
+        const response = result.filter(l => l.trim() !== '').join('\n').replace(/\n\n+/g, '\n').trim() || `Error: ${stderr || 'No response'}`;
         state.history.push({ role: 'agent', content: response });
         if (state.history.length > 20) state.history = state.history.slice(-20);
         saveHistory(project);
@@ -206,6 +208,16 @@ app.post('/api/chat', (req, res) => {
     });
 
     proc.on('error', err => res.json({ response: `Failed: ${err.message}` }));
+});
+
+// --- Delete Project ---
+app.delete('/api/projects/:name', (req, res) => {
+    const name = req.params.name;
+    const projectDir = path.join(PROJECTS_DIR, name);
+    if (!fs.existsSync(projectDir)) return res.json({ success: false, error: 'Project not found' });
+    fs.rmSync(projectDir, { recursive: true, force: true });
+    delete projectState[name];
+    res.json({ success: true });
 });
 
 // --- Reset ---

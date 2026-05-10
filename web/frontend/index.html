@@ -67,12 +67,17 @@
         .message.agent ul { margin: 8px 0; padding-left: 20px; list-style: disc; }
         .message.agent li { margin: 3px 0; line-height: 1.5; }
         .message.agent h3, .message.agent h4 { margin: 12px 0 6px; color: #a5b4fc; }
-        .typing { align-self: flex-start; padding: 14px 18px; background: rgba(30,41,59,0.6); border: 1px solid rgba(99,102,241,0.15); border-radius: 18px; display: flex; align-items: center; gap: 10px; }
-        .typing span { display: inline-block; width: 7px; height: 7px; background: #818cf8; border-radius: 50%; animation: bounce 1.4s infinite; }
-        .typing span:nth-child(2) { animation-delay: 0.2s; }
-        .typing span:nth-child(3) { animation-delay: 0.4s; }
-        .typing .timer { font-size: 11px; color: #64748b; margin-left: 8px; }
-        @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
+        .typing { align-self: flex-start; padding: 16px 20px; background: rgba(30,41,59,0.6); border: 1px solid rgba(99,102,241,0.15); border-radius: 18px; display: flex; align-items: center; gap: 12px; }
+        .typing .dots { display: flex; gap: 4px; }
+        .typing .dots span { display: inline-block; width: 8px; height: 8px; background: #818cf8; border-radius: 50%; animation: bounce 1.4s infinite; }
+        .typing .dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing .dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+        .typing .pulse-ring { width: 32px; height: 32px; border-radius: 50%; border: 2px solid transparent; border-top-color: #818cf8; border-right-color: #c084fc; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .typing .timer { font-size: 11px; color: #64748b; font-variant-numeric: tabular-nums; }
+        .typing .status-text { font-size: 12px; color: #94a3b8; animation: fadeText 2s infinite; }
+        @keyframes fadeText { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
         /* Input */
         .input-area { padding: 18px 24px; border-top: 1px solid rgba(99,102,241,0.1); background: rgba(26,26,46,0.5); }
@@ -185,24 +190,25 @@
         <div class="modal">
             <h2>AWS Credentials</h2>
             <div class="tabs">
-                <button class="tab active" onclick="switchTab('iam')">IAM User</button>
-                <button class="tab" onclick="switchTab('sso')">SSO</button>
-                <button class="tab" onclick="switchTab('profile')">Profile</button>
+                <button class="tab active" onclick="switchTab('iam')">Access Keys</button>
+                <button class="tab" onclick="switchTab('sso')">SSO Help</button>
             </div>
             <div class="tab-content" id="tab-iam">
                 <label>Access Key ID<input type="text" id="accessKey" placeholder="AKIA..."></label>
                 <label>Secret Access Key<input type="password" id="secretKey"></label>
-                <label>Session Token<input type="text" id="sessionToken" placeholder="Optional"></label>
+                <label>Session Token<input type="text" id="sessionToken" placeholder="Required for SSO/temporary credentials"></label>
                 <label>Region<input type="text" id="iamRegion" value="us-east-1"></label>
             </div>
             <div class="tab-content hidden" id="tab-sso">
-                <label>SSO Start URL<input type="text" id="ssoUrl"></label>
-                <label>SSO Region<input type="text" id="ssoRegion" value="us-east-1"></label>
-                <label>Account ID<input type="text" id="ssoAccount"></label>
-                <label>Role Name<input type="text" id="ssoRole"></label>
-            </div>
-            <div class="tab-content hidden" id="tab-profile">
-                <label>Profile Name<input type="text" id="profileName" placeholder="default"></label>
+                <div style="font-size:12px;color:#94a3b8;line-height:1.8">
+                    <p style="margin-bottom:10px"><strong style="color:#e2e8f0">Using AWS SSO?</strong> Follow these steps:</p>
+                    <p>1. Open your SSO portal URL in browser</p>
+                    <p>2. Click your AWS account</p>
+                    <p>3. Click <strong>"Command line or programmatic access"</strong></p>
+                    <p>4. Copy all 3 values (Access Key, Secret Key, Session Token)</p>
+                    <p>5. Switch to <strong>"Access Keys"</strong> tab and paste them</p>
+                </div>
+                <button class="btn-save" onclick="switchTab('iam')" style="margin-top:14px">← Go to Access Keys</button>
             </div>
             <div class="modal-actions">
                 <button class="btn-save" onclick="saveCreds()">Save & Connect</button>
@@ -324,10 +330,24 @@
 
         function showTyping() {
             const d = document.createElement('div'); d.className = 'typing'; d.id = 'typing';
-            d.innerHTML = '<span></span><span></span><span></span><span class="timer" id="loadTimer">0s</span>';
+            d.innerHTML = `
+                <div class="pulse-ring"></div>
+                <div>
+                    <div class="status-text" id="statusText">Thinking...</div>
+                    <div class="timer" id="loadTimer">0s</div>
+                </div>
+                <div class="dots"><span></span><span></span><span></span></div>
+            `;
             chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
             let sec = 0;
-            timerInterval = setInterval(() => { sec++; const el = document.getElementById('loadTimer'); if (el) el.textContent = sec + 's'; }, 1000);
+            const statusMessages = ['Thinking...', 'Analyzing...', 'Querying AWS...', 'Processing...', 'Almost there...'];
+            timerInterval = setInterval(() => {
+                sec++;
+                const el = document.getElementById('loadTimer');
+                const st = document.getElementById('statusText');
+                if (el) el.textContent = sec + 's';
+                if (st && sec % 4 === 0) st.textContent = statusMessages[Math.min(Math.floor(sec / 4), statusMessages.length - 1)];
+            }, 1000);
         }
         function hideTyping() { clearInterval(timerInterval); const el = document.getElementById('typing'); if (el) el.remove(); }
 
@@ -438,23 +458,22 @@
         }
         function closeCreds() { document.getElementById('credModal').classList.remove('show'); }
         function switchTab(tab) {
-            activeTab = tab;
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
-            document.querySelectorAll('.tab')[['iam','sso','profile'].indexOf(tab)].classList.add('active');
-            document.getElementById('tab-' + tab).classList.remove('hidden');
+            document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', (tab === 'iam' && i === 0) || (tab === 'sso' && i === 1)));
+            document.getElementById('tab-iam').classList.toggle('hidden', tab !== 'iam');
+            document.getElementById('tab-sso').classList.toggle('hidden', tab !== 'sso');
         }
         async function saveCreds() {
-            let creds = { type: activeTab, project: currentProject };
-            if (activeTab === 'iam') { creds.accessKey = document.getElementById('accessKey').value; creds.secretKey = document.getElementById('secretKey').value; creds.sessionToken = document.getElementById('sessionToken').value; creds.region = document.getElementById('iamRegion').value; }
-            else if (activeTab === 'sso') { creds.ssoUrl = document.getElementById('ssoUrl').value; creds.ssoRegion = document.getElementById('ssoRegion').value; creds.accountId = document.getElementById('ssoAccount').value; creds.roleName = document.getElementById('ssoRole').value; }
-            else { creds.profile = document.getElementById('profileName').value || 'default'; }
+            let creds = { type: 'iam', project: currentProject, accessKey: document.getElementById('accessKey').value, secretKey: document.getElementById('secretKey').value, sessionToken: document.getElementById('sessionToken').value, region: document.getElementById('iamRegion').value };
             const status = document.getElementById('credStatus');
             status.textContent = 'Connecting...'; status.style.color = '#eab308';
             const res = await fetch(`${API_URL}/credentials`, { method: 'POST', headers: headers(), body: JSON.stringify(creds) });
             const data = await res.json();
-            if (data.success) { status.textContent = '✓ ' + data.identity; status.style.color = '#10b981'; loadCredStatus(); setTimeout(closeCreds, 1500); }
-            else { status.textContent = data.error; status.style.color = '#ef4444'; }
+            if (data.success && data.ssoAuth) {
+                status.innerHTML = `<div style="color:#34d399">✓ SSO configured. Authenticate here:</div><a href="${data.authUrl}" target="_blank" style="color:#818cf8;word-break:break-all">${data.authUrl}</a>${data.userCode ? `<div style="margin-top:8px;font-size:16px;font-weight:bold;color:#e2e8f0;letter-spacing:2px">${data.userCode}</div>` : ''}<div style="color:#64748b;margin-top:6px">Open the link, enter the code, then approve.</div>`;
+                status.style.color = '';
+                loadCredStatus();
+            } else if (data.success) { status.textContent = '✓ ' + data.identity; status.style.color = '#34d399'; loadCredStatus(); setTimeout(closeCreds, 1500); }
+            else { status.textContent = data.error; status.style.color = '#f87171'; }
         }
     </script>
 </body>

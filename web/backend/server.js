@@ -388,9 +388,31 @@ app.post('/api/credentials', (req, res) => {
             else { state.awsEnv = {}; res.json({ success: false, error: 'Invalid credentials' }); }
         });
     } else if (type === 'sso') {
-        state.awsEnv = { AWS_PROFILE: `sso-${accountId}`, AWS_DEFAULT_REGION: ssoRegion || 'us-east-1' };
-        saveAwsEnv(project, state.awsEnv);
-        res.json({ success: true, identity: `SSO: ${roleName}@${accountId}` });
+        if (!ssoUrl || !accountId || !roleName) return res.json({ success: false, error: 'SSO URL, Account ID, and Role required' });
+        const profileName = `sso-${accountId}`;
+        const ssoReg = ssoRegion || 'us-east-1';
+        const cmds = [
+            `aws configure set sso_start_url "${ssoUrl}" --profile ${profileName}`,
+            `aws configure set sso_region "${ssoReg}" --profile ${profileName}`,
+            `aws configure set sso_account_id "${accountId}" --profile ${profileName}`,
+            `aws configure set sso_role_name "${roleName}" --profile ${profileName}`,
+            `aws configure set region "${ssoReg}" --profile ${profileName}`
+        ];
+        const setup = spawn('bash', ['-c', cmds.join(' && ')], { env: { ...process.env } });
+        setup.on('close', (code) => {
+            if (code !== 0) return res.json({ success: false, error: 'Failed to configure SSO profile' });
+            const login = spawn('aws', ['sso', 'login', '--profile', profileName, '--no-browser'], { env: { ...process.env } });
+            let output = '';
+            login.stdout.on('data', d => output += d.toString());
+            login.stderr.on('data', d => output += d.toString());
+            setTimeout(() => {
+                const urlMatch = output.match(/(https:\/\/[^\s]+)/);
+                const codeMatch = output.match(/([A-Z]{4}-[A-Z]{4})/);
+                state.awsEnv = { AWS_PROFILE: profileName, AWS_DEFAULT_REGION: ssoReg };
+                saveAwsEnv(project, state.awsEnv);
+                res.json({ success: true, ssoAuth: true, authUrl: urlMatch ? urlMatch[1] : '', userCode: codeMatch ? codeMatch[1] : '', identity: `SSO: ${roleName}@${accountId}`, profile: profileName });
+            }, 5000);
+        });
     } else if (type === 'profile') {
         state.awsEnv = { AWS_PROFILE: profile || 'default' };
         saveAwsEnv(project, state.awsEnv);

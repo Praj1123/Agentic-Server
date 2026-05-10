@@ -165,7 +165,28 @@ app.post('/api/chat', (req, res) => {
     proc.stderr.on('data', d => stderr += d);
 
     proc.on('close', () => {
-        const clean = stdout.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '').trim();
+        let clean = stdout.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '').trim();
+        // Remove tool execution noise — keep only agent's actual responses
+        clean = clean
+            .replace(/Running aws cli command \(using tool: aws\):[\s\S]*?Completed in [\d.]+s/g, '')
+            .replace(/I will run the following command:[\s\S]*?Completed in [\d.]+s/g, '')
+            .replace(/I'll append content to file:[\s\S]*?Completed in [\d.]+s/g, '')
+            .replace(/\(using tool: (?:shell|write|aws)\)\n?/g, '')
+            .replace(/Purpose:.*\n?/g, '')
+            .replace(/Service name:.*\n?/g, '')
+            .replace(/Operation name:.*\n?/g, '')
+            .replace(/Parameters:[\s\S]*?(?=\n\n|\n>|$)/g, '')
+            .replace(/Region:.*\n?/g, '')
+            .replace(/Label:.*\n?/g, '')
+            .replace(/Appending to:.*\n?/g, '')
+            .replace(/\+ \d+:.*\n?/g, '')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
+        // Extract only lines starting with > (agent responses) if present
+        const agentLines = clean.split('\n').filter(l => l.startsWith('> '));
+        if (agentLines.length > 0) {
+            clean = agentLines.map(l => l.slice(2)).join('\n');
+        }
         const response = clean || `Error: ${stderr || 'No response'}`;
         state.history.push({ role: 'agent', content: response });
         if (state.history.length > 20) state.history = state.history.slice(-20);

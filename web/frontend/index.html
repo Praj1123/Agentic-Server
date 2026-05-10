@@ -43,6 +43,13 @@
         .message.agent code { background: #334155; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-family: 'JetBrains Mono', monospace; }
         .message.agent pre { background: #0f172a; padding: 12px; border-radius: 8px; margin: 8px 0; overflow-x: auto; border: 1px solid #1e293b; }
         .message.agent pre code { background: none; padding: 0; }
+        .message.agent table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13px; }
+        .message.agent th { background: #0f172a; padding: 8px 12px; text-align: left; border-bottom: 2px solid #334155; color: #94a3b8; font-weight: 600; }
+        .message.agent td { padding: 8px 12px; border-bottom: 1px solid #1e293b; }
+        .message.agent tr:hover td { background: #0f172a; }
+        .message.agent ul { margin: 8px 0; padding-left: 20px; }
+        .message.agent li { margin: 4px 0; }
+        .message.agent h3, .message.agent h4 { margin: 12px 0 6px; color: #60a5fa; }
         .typing { align-self: flex-start; padding: 14px 18px; background: #1e293b; border-radius: 16px; }
         .typing span { display: inline-block; width: 7px; height: 7px; background: #60a5fa; border-radius: 50%; animation: bounce 1.4s infinite; margin: 0 2px; }
         .typing span:nth-child(2) { animation-delay: 0.2s; }
@@ -178,12 +185,40 @@
 
         function formatMessage(text) {
             // Escape HTML first
-            const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            return escaped
-                .replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>')
-                .replace(/`([^`]+)`/g, '<code>$1</code>')
-                .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-                .replace(/\n/g, '<br>');
+            let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            // Code blocks
+            html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+            // Inline code
+            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+            // Bold
+            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            // Tables
+            html = html.replace(/(\|.+\|[\n\r]+\|[-| :]+\|[\n\r]+((\|.+\|[\n\r]*)+))/g, (match) => {
+                const rows = match.trim().split('\n').filter(r => !r.match(/^\|[\s-:|]+\|$/));
+                let table = '<table>';
+                rows.forEach((row, i) => {
+                    const cells = row.split('|').filter(c => c.trim());
+                    const tag = i === 0 ? 'th' : 'td';
+                    table += '<tr>' + cells.map(c => `<${tag}>${c.trim()}</${tag}>`).join('') + '</tr>';
+                });
+                return table + '</table>';
+            });
+            // Checkmarks and status
+            html = html.replace(/✅/g, '<span style="color:#10b981">✅</span>');
+            html = html.replace(/❌/g, '<span style="color:#ef4444">❌</span>');
+            html = html.replace(/⚠️/g, '<span style="color:#f59e0b">⚠️</span>');
+            // Headings
+            html = html.replace(/^### (.+)$/gm, '<h4>$1</h4>');
+            html = html.replace(/^## (.+)$/gm, '<h3>$1</h3>');
+            // Lists
+            html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
+            html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
+            // Line breaks
+            html = html.replace(/\n/g, '<br>');
+            // Clean up extra breaks around block elements
+            html = html.replace(/<br><(table|pre|ul|h[34])/g, '<$1');
+            html = html.replace(/<\/(table|pre|ul|h[34])><br>/g, '</$1>');
+            return html;
         }
 
         function showTyping() { const d = document.createElement('div'); d.className = 'typing'; d.id = 'typing'; d.innerHTML = '<span></span><span></span><span></span>'; chat.appendChild(d); chat.scrollTop = chat.scrollHeight; }

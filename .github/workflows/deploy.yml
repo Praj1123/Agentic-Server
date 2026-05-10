@@ -60,5 +60,8 @@ jobs:
             fi
 
             # Restart service
-            sudo systemctl restart infra-agent
+            sudo systemctl stop infra-agent || true
+            sleep 1
+            sudo kill -9 $(sudo lsof -t -i:3001) 2>/dev/null || true
+            sudo systemctl start infra-agent
             echo "✅ Deployed and running"

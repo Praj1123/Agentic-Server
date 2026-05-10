@@ -41,14 +41,18 @@
         .message.user { align-self: flex-end; background: #1d4ed8; border-bottom-right-radius: 4px; }
         .message.agent { align-self: flex-start; background: #1e293b; border-bottom-left-radius: 4px; }
         .message.agent code { background: #334155; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-family: 'JetBrains Mono', monospace; }
-        .message.agent pre { background: #0f172a; padding: 12px; border-radius: 8px; margin: 8px 0; overflow-x: auto; border: 1px solid #1e293b; }
-        .message.agent pre code { background: none; padding: 0; }
+        .message.agent pre { background: #0f172a; padding: 12px; border-radius: 8px; margin: 8px 0; overflow-x: auto; border: 1px solid #1e293b; position: relative; }
+        .message.agent pre code { background: none; padding: 0; font-size: 12px; line-height: 1.5; }
+        .copy-btn { position: absolute; top: 8px; right: 8px; background: #334155; border: none; border-radius: 4px; padding: 4px 8px; color: #94a3b8; font-size: 11px; cursor: pointer; opacity: 0; transition: opacity 0.15s; }
+        .message.agent pre:hover .copy-btn { opacity: 1; }
+        .copy-btn:hover { background: #475569; color: #e2e8f0; }
+        .copy-btn.copied { background: #10b981; color: white; }
         .message.agent table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 13px; }
         .message.agent th { background: #0f172a; padding: 8px 12px; text-align: left; border-bottom: 2px solid #334155; color: #94a3b8; font-weight: 600; }
         .message.agent td { padding: 8px 12px; border-bottom: 1px solid #1e293b; }
         .message.agent tr:hover td { background: #0f172a; }
-        .message.agent ul { margin: 8px 0; padding-left: 20px; }
-        .message.agent li { margin: 4px 0; }
+        .message.agent ul { margin: 8px 0; padding-left: 20px; list-style: disc; }
+        .message.agent li { margin: 2px 0; line-height: 1.5; }
         .message.agent h3, .message.agent h4 { margin: 12px 0 6px; color: #60a5fa; }
         .typing { align-self: flex-start; padding: 14px 18px; background: #1e293b; border-radius: 16px; }
         .typing span { display: inline-block; width: 7px; height: 7px; background: #60a5fa; border-radius: 50%; animation: bounce 1.4s infinite; margin: 0 2px; }
@@ -184,16 +188,24 @@
         }
 
         function formatMessage(text) {
-            // Escape HTML first
-            let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            // Code blocks
-            html = html.replace(/```(\w*)\n([\s\S]*?)```/g, '<pre><code>$2</code></pre>');
+            // Re-add code fences: detect "json\n{" or "bash\n" patterns without backticks
+            let fenced = text.replace(/^(json|yaml|bash|python|hcl|sh|sql|xml)\n(\{[\s\S]*?\n\}|\[[\s\S]*?\n\]|[\s\S]*?)(?=\n\n|\n[A-Z]|\n\d+\.|\nNeed|\nWant|\nLet|$)/gm, '```$1\n$2\n```');
+
+            // Code blocks FIRST (before any escaping)
+            const codeBlocks = [];
+            let processed = fenced.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+                const escaped = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                codeBlocks.push(`<pre><button class="copy-btn" onclick="copyCode(this)">Copy</button><code>${escaped}</code></pre>`);
+                return `__CODEBLOCK_${codeBlocks.length - 1}__`;
+            });
+            // Now escape remaining HTML
+            processed = processed.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             // Inline code
-            html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+            processed = processed.replace(/`([^`]+)`/g, '<code>$1</code>');
             // Bold
-            html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            processed = processed.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
             // Tables
-            html = html.replace(/(\|.+\|[\n\r]+\|[-| :]+\|[\n\r]+((\|.+\|[\n\r]*)+))/g, (match) => {
+            processed = processed.replace(/(\|.+\|[\n\r]+\|[-| :]+\|[\n\r]+((\|.+\|[\n\r]*)+))/g, (match) => {
                 const rows = match.trim().split('\n').filter(r => !r.match(/^\|[\s-:|]+\|$/));
                 let table = '<table>';
                 rows.forEach((row, i) => {
@@ -203,22 +215,32 @@
                 });
                 return table + '</table>';
             });
-            // Checkmarks and status
-            html = html.replace(/✅/g, '<span style="color:#10b981">✅</span>');
-            html = html.replace(/❌/g, '<span style="color:#ef4444">❌</span>');
-            html = html.replace(/⚠️/g, '<span style="color:#f59e0b">⚠️</span>');
+            // Status icons
+            processed = processed.replace(/✅/g, '<span style="color:#10b981">✅</span>');
+            processed = processed.replace(/❌/g, '<span style="color:#ef4444">❌</span>');
+            processed = processed.replace(/⚠️/g, '<span style="color:#f59e0b">⚠️</span>');
             // Headings
-            html = html.replace(/^### (.+)$/gm, '<h4>$1</h4>');
-            html = html.replace(/^## (.+)$/gm, '<h3>$1</h3>');
-            // Lists
-            html = html.replace(/^- (.+)$/gm, '<li>$1</li>');
-            html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>');
-            // Line breaks
-            html = html.replace(/\n/g, '<br>');
-            // Clean up extra breaks around block elements
-            html = html.replace(/<br><(table|pre|ul|h[34])/g, '<$1');
-            html = html.replace(/<\/(table|pre|ul|h[34])><br>/g, '</$1>');
-            return html;
+            processed = processed.replace(/^### (.+)$/gm, '<h4>$1</h4>');
+            processed = processed.replace(/^## (.+)$/gm, '<h3>$1</h3>');
+            // Lists — handle items separated by blank lines
+            processed = processed.replace(/(\d+\. .+\n?\n?)+/g, (match) => {
+                const items = match.trim().split(/\n\n?/).filter(l => l.match(/^\d+\./));
+                if (items.length > 0) return '<ul>' + items.map(i => `<li>${i.replace(/^\d+\.\s*/, '')}</li>`).join('') + '</ul>';
+                return match;
+            });
+            processed = processed.replace(/^- (.+)$/gm, '<li>$1</li>');
+            processed = processed.replace(/(<li>.*<\/li>[\n]*)+/g, (m) => m.includes('<ul>') ? m : `<ul>${m}</ul>`);
+            // Line breaks — collapse double newlines to single (kiro adds extra spacing)
+            processed = processed.replace(/\n\n/g, '\n');
+            processed = processed.replace(/\n/g, '<br>');
+            // Clean up
+            processed = processed.replace(/<br><(table|pre|ul|h[34])/g, '<$1');
+            processed = processed.replace(/<\/(table|pre|ul|h[34])><br>/g, '</$1>');
+            // Restore code blocks
+            codeBlocks.forEach((block, i) => {
+                processed = processed.replace(`__CODEBLOCK_${i}__`, block);
+            });
+            return processed;
         }
 
         function showTyping() { const d = document.createElement('div'); d.className = 'typing'; d.id = 'typing'; d.innerHTML = '<span></span><span></span><span></span>'; chat.appendChild(d); chat.scrollTop = chat.scrollHeight; }
@@ -242,6 +264,15 @@
         }
 
         function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
+
+        function copyCode(btn) {
+            const code = btn.nextElementSibling.textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                btn.textContent = '✓ Copied';
+                btn.classList.add('copied');
+                setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+            });
+        }
 
         // --- Projects ---
         async function loadProjects() {
@@ -267,7 +298,10 @@
             chat.innerHTML = '';
             document.querySelectorAll('.project-item').forEach(el => el.classList.toggle('active', el.textContent === name));
             loadCredStatus();
-            fetch(`${API_URL}/reset`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ project: name }) });
+            // Load chat history
+            fetch(`${API_URL}/history/${name}`).then(r => r.json()).then(data => {
+                if (data.history) data.history.forEach(m => addMessage(m.content, m.role));
+            }).catch(() => {});
         }
 
         async function loadCredStatus() {

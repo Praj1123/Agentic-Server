@@ -138,8 +138,19 @@ app.post('/api/chat', (req, res) => {
 
     // Build prompt with history
     let fullPrompt = '';
+
+    // Inject knowledge base content
+    const kbFile = path.join(PROJECTS_DIR, project, 'knowledge_base.txt');
+    let kb = '';
+    if (fs.existsSync(kbFile)) {
+        kb = fs.readFileSync(kbFile, 'utf8').trim();
+    }
+    if (kb) {
+        fullPrompt += `KNOWLEDGE BASE (what you've done before on this project):\n${kb}\n\n`;
+    }
+
     if (state.history.length > 1) {
-        fullPrompt = 'CONVERSATION HISTORY:\n';
+        fullPrompt += 'CONVERSATION HISTORY:\n';
         for (const msg of state.history.slice(0, -1)) {
             fullPrompt += `${msg.role === 'user' ? 'User' : 'Agent'}: ${msg.content}\n`;
         }
@@ -148,7 +159,7 @@ app.post('/api/chat', (req, res) => {
             fullPrompt += '\n\nIMPORTANT: User approved. Execute the plan from your previous response NOW using use_aws or execute_bash.';
         }
     } else {
-        fullPrompt = message;
+        fullPrompt += message;
     }
 
     const projectDir = path.join(PROJECTS_DIR, project);
@@ -165,29 +176,29 @@ app.post('/api/chat', (req, res) => {
     proc.stderr.on('data', d => stderr += d);
 
     proc.on('close', () => {
-        let clean = stdout.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '').trim();
-        // Remove tool execution noise — keep only agent's actual responses
-        clean = clean
-            .replace(/Running aws cli command \(using tool: aws\):[\s\S]*?Completed in [\d.]+s/g, '')
-            .replace(/I will run the following command:[\s\S]*?Completed in [\d.]+s/g, '')
-            .replace(/I'll append content to file:[\s\S]*?Completed in [\d.]+s/g, '')
-            .replace(/\(using tool: (?:shell|write|aws)\)\n?/g, '')
-            .replace(/Purpose:.*\n?/g, '')
-            .replace(/Service name:.*\n?/g, '')
-            .replace(/Operation name:.*\n?/g, '')
-            .replace(/Parameters:[\s\S]*?(?=\n\n|\n>|$)/g, '')
-            .replace(/Region:.*\n?/g, '')
-            .replace(/Label:.*\n?/g, '')
-            .replace(/Appending to:.*\n?/g, '')
-            .replace(/\+ \d+:.*\n?/g, '')
-            .replace(/\n{3,}/g, '\n\n')
-            .trim();
-        // Extract only lines starting with > (agent responses) if present
-        const agentLines = clean.split('\n').filter(l => l.startsWith('> '));
-        if (agentLines.length > 0) {
-            clean = agentLines.map(l => l.slice(2)).join('\n');
+        let clean = stdout.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '')
+                          .replace(/\x1B\[\?25[hl]/g, '')
+                          .replace(/\x1B\[[\d;]*m/g, '')
+                          .replace(/\r/g, '')
+                          .trim();
+        // Kiro format: agent responses start with "> "
+        // Capture ALL agent blocks (there can be multiple separated by tool calls)
+        const lines = clean.split('\n');
+        const result = [];
+        let capturing = false;
+        for (const line of lines) {
+            if (line.startsWith('> ')) {
+                capturing = true;
+                result.push(line.slice(2));
+            } else if (capturing) {
+                if (line.match(/^(Running |Service name:|Operation name:|Parameters:|Region:|Label:|- [a-z-]+:|↓ |╰ |\(using tool|I will run|I'll append|Purpose:|At line:|The token|CategoryInfo|FullyQualifiedErrorId|\+|Completed in| - Completed|Appending to:|Reading |✓ Successfully|Writing |Searching |Created |Deleted )/)) {
+                    capturing = false;
+                } else {
+                    result.push(line);
+                }
+            }
         }
-        const response = clean || `Error: ${stderr || 'No response'}`;
+        const response = result.join('\n').replace(/\n{2,}/g, '\n').trim() || `Error: ${stderr || 'No response'}`;
         state.history.push({ role: 'agent', content: response });
         if (state.history.length > 20) state.history = state.history.slice(-20);
         saveHistory(project);
@@ -251,6 +262,26 @@ app.get('/api/credentials/:project', (req, res) => {
 });
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
+// Get chat history for a project
+app.get('/api/history/:project', (req, res) => {
+    const state = getState(req.params.project);
+    res.json({ history: state.history });
+});
+
+// Debug: see raw kiro output
+app.post('/api/debug', (req, res) => {
+    const { message, project } = req.body;
+    const projectDir = path.join(PROJECTS_DIR, project);
+    const state = getState(project);
+    const proc = spawn('kiro-cli', ['chat', '--no-interactive', '--trust-all-tools', '--agent', project, message], { cwd: projectDir, env: { ...process.env, ...state.awsEnv }, timeout: 120000 });
+    let stdout = '';
+    proc.stdout.on('data', d => stdout += d);
+    proc.on('close', () => {
+        const clean = stdout.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '').replace(/\x1B\[\?25[hl]/g, '').replace(/\x1B\[[\d;]*m/g, '').replace(/\r/g, '');
+        res.json({ raw: clean });
+    });
+});
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`\n🚀 Multi-Project Agent at http://localhost:${PORT}\n`));

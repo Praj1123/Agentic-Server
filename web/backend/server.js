@@ -6,6 +6,10 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 
+// Load .env file
+const envPath = path.join(__dirname, '.env');
+if (fs.existsSync(envPath)) { fs.readFileSync(envPath, 'utf8').split('\n').forEach(line => { const [k, ...v] = line.split('='); if (k && k.trim() && !k.startsWith('#')) process.env[k.trim()] = v.join('=').trim(); }); }
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -60,7 +64,10 @@ function verifyPw(password, hash, salt) {
     return crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512').toString('hex') === hash;
 }
 
-const sessions = {};
+const SESSIONS_FILE = path.join(DATA_DIR, 'sessions.json');
+let sessions = {};
+if (fs.existsSync(SESSIONS_FILE)) { try { sessions = JSON.parse(fs.readFileSync(SESSIONS_FILE, 'utf8')); } catch {} }
+function saveSessions() { fs.writeFileSync(SESSIONS_FILE, JSON.stringify(sessions)); }
 
 function authMiddleware(req, res, next) {
     if (['/api/login', '/api/signup'].includes(req.path) || !req.path.startsWith('/api/')) return next();
@@ -87,6 +94,7 @@ app.post('/api/signup', (req, res) => {
 
     const token = crypto.randomBytes(48).toString('hex');
     sessions[token] = { email, name: users[email].name, role: 'admin', loginAt: Date.now() };
+    saveSessions();
     res.json({ success: true, token, name: users[email].name, role: 'admin' });
 });
 
@@ -129,12 +137,13 @@ app.post('/api/login', (req, res) => {
 
     const token = crypto.randomBytes(48).toString('hex');
     sessions[token] = { email, name: user.name, role: user.role, loginAt: Date.now() };
+    saveSessions();
     res.json({ success: true, token, name: user.name, role: user.role });
 });
 
 app.post('/api/logout', (req, res) => {
     const token = req.headers['authorization'];
-    if (token) delete sessions[token];
+    if (token) { delete sessions[token]; saveSessions(); }
     res.json({ success: true });
 });
 
@@ -239,7 +248,40 @@ app.post('/api/projects', (req, res) => {
     };
     fs.writeFileSync(path.join(projectDir, '.kiro', 'agents', `${name}.json`), JSON.stringify(agentConfig, null, 2));
 
-    const prompt = `# ${name} — Infrastructure Agent\nYou are the DevOps engineer for ${name}. You learn from every task.\n\n## RULES:\n1. ALWAYS check knowledge base first\n2. Show plan → ask approval → execute on "yes"\n3. When user says "yes" — execute immediately\n4. NEVER say "run it yourself"\n5. After tasks, store summary in knowledge base\n6. Present data in TABLES, not bullet lists\n\n## DEFAULTS:\n- Region: ${region || 'us-east-1'}\n- If use_aws fails, fall back to execute_bash\n\n## RESPONSE FORMAT:\n- Use markdown tables for plans and results\n- Short and direct\n`;
+    const prompt = `# ${name} — Infrastructure Agent
+
+You are the infrastructure expert for the "${name}" project on AWS (region: ${region || 'us-east-1'}).
+
+## WHO YOU ARE:
+- You migrated this workload to AWS and know every detail about it
+- You are the team's go-to person for understanding, debugging, and managing this infrastructure
+- You have full AWS expertise but explain things in SIMPLE terms — assume the user has ZERO AWS knowledge
+
+## HOW TO ANSWER:
+- ALWAYS check the knowledge base first for project-specific details (resources, decisions, architecture)
+- When explaining AWS concepts, use analogies and plain language (e.g., "Security Group = firewall rules for your server")
+- When referencing resources, include the actual resource names/IDs from this project's knowledge base
+- If the user asks "why" something was set up a certain way, explain the reasoning (cost, performance, security, availability)
+- If you don't have project-specific info in the knowledge base, say so and offer to look it up via AWS
+
+## RULES:
+1. Check knowledge base FIRST before making any AWS API calls
+2. Show plan → ask approval → execute on "yes"
+3. When user says "yes" — execute immediately, no re-confirmation
+4. NEVER say "run it yourself" — you execute everything
+5. After completing tasks, store a detailed summary in knowledge base (what was done, why, how to troubleshoot)
+6. Present data in TABLES, not bullet lists
+
+## RESPONSE STYLE:
+- Short, direct, no jargon unless explained
+- Use markdown tables for resource lists and plans
+- When showing architecture, describe the flow simply: "Request comes in → hits load balancer → goes to your app server → talks to database"
+- For troubleshooting, give step-by-step with expected output at each step
+
+## DEFAULTS:
+- Region: ${region || 'us-east-1'}
+- If use_aws fails, fall back to execute_bash with AWS CLI
+`;
     fs.writeFileSync(path.join(projectDir, 'prompts', 'system-prompt.md'), prompt);
     res.json({ success: true });
 });
@@ -264,19 +306,57 @@ app.post('/api/chat', (req, res) => {
     state.history.push({ role: 'user', content: message });
 
     let fullPrompt = '';
-    const kbFile = path.join(PROJECTS_DIR, project, 'knowledge_base.txt');
-    if (fs.existsSync(kbFile)) {
-        const kb = fs.readFileSync(kbFile, 'utf8').trim();
-        if (kb) fullPrompt += `KNOWLEDGE BASE:\n${kb}\n\n`;
+
+    // Role-based access control instructions
+    if (req.user.role !== 'admin') {
+        fullPrompt += `USER ROLE: Client Team Member (restricted)
+
+ACCESS RULES FOR THIS USER:
+- READ-ONLY actions are ALLOWED freely: describe, list, get, check status, view logs, explain architecture
+- WRITE/MODIFY actions REQUIRE APPROVAL: create, delete, modify, update, restart, stop, terminate, scale, deploy
+- For any write action: ALWAYS show a detailed plan first with what will change and potential impact
+- ONLY execute write actions when user explicitly says "yes", "approve", "proceed", "do it", or "go ahead"
+- If user asks to do something destructive (delete, terminate), warn about consequences and ask for confirmation TWICE
+- Always explain what each action does in simple terms before asking for approval
+- After execution, explain what happened and how to verify it worked
+
+`;
     }
 
-    if (state.history.length > 1) {
-        fullPrompt += 'CONVERSATION HISTORY:\n';
-        for (const msg of state.history.slice(-10, -1)) {
-            fullPrompt += `${msg.role === 'user' ? 'User' : 'Agent'}: ${msg.content}\n`;
+    const kbFile = path.join(PROJECTS_DIR, project, 'knowledge_base.txt');
+    // Smart KB: only send relevant entries based on current query
+    if (fs.existsSync(kbFile)) {
+        const kb = fs.readFileSync(kbFile, 'utf8').trim();
+        if (kb) {
+            const entries = kb.split(/^---\s*\[/m).filter(e => e.trim());
+            const keywords = message.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+            const relevant = entries.filter(entry => {
+                const lower = entry.toLowerCase();
+                return keywords.some(k => lower.includes(k));
+            }).slice(0, 5); // max 5 relevant entries
+            if (relevant.length > 0) {
+                fullPrompt += `RELEVANT KNOWLEDGE:\n---[${relevant.join('\n---[')}\n\n`;
+            }
         }
-        fullPrompt += `\nCURRENT MESSAGE: ${message}`;
-        if (/^(yes|y|proceed|do it|go ahead)$/i.test(message.trim())) {
+    }
+
+    // Smart history: summarize older messages, keep recent 4 in full
+    if (state.history.length > 1) {
+        const recent = state.history.slice(-5, -1);
+        const older = state.history.slice(0, -5);
+        if (older.length > 0) {
+            const summary = older.map(m => `${m.role === 'user' ? 'User asked' : 'Agent answered'}: ${m.content.slice(0, 80)}`).join('; ');
+            fullPrompt += `EARLIER CONTEXT (summary): ${summary}\n\n`;
+        }
+        if (recent.length > 0) {
+            fullPrompt += 'RECENT CONVERSATION:\n';
+            for (const msg of recent) {
+                const content = msg.role === 'agent' ? msg.content.slice(0, 500) : msg.content;
+                fullPrompt += `[${msg.role.toUpperCase()}]: ${content}\n\n`;
+            }
+        }
+        fullPrompt += `[USER]: ${message}`;
+        if (/^(yes|y|proceed|do it|go ahead|approve)$/i.test(message.trim())) {
             fullPrompt += '\n\nIMPORTANT: User approved. Execute the plan from your previous response NOW.';
         }
     } else {
@@ -285,33 +365,55 @@ app.post('/api/chat', (req, res) => {
 
     const projectDir = path.join(PROJECTS_DIR, project);
     const proc = spawn('kiro-cli', ['chat', '--no-interactive', '--trust-all-tools', '--agent', project, fullPrompt], {
-        cwd: projectDir, env: { ...process.env, ...state.awsEnv }, timeout: 120000
+        cwd: projectDir, env: { ...process.env, ...state.awsEnv }, timeout: 300000
     });
 
     let stdout = '', stderr = '';
-    proc.stdout.on('data', d => stdout += d);
-    proc.stderr.on('data', d => stderr += d);
+    const progressKey = project;
+    const progress = { status: 'thinking', lastAction: '' };
+    if (!global.chatProgress) global.chatProgress = {};
+    global.chatProgress[progressKey] = progress;
 
-    // Timeout handling
-    const timeout = setTimeout(() => { proc.kill(); }, 90000);
+    proc.stdout.on('data', d => {
+        stdout += d;
+        const chunk = d.toString().replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '').replace(/\x1B\[[\d;]*m/g, '').replace(/\r/g, '');
+        const lines = chunk.split('\n').map(l => l.trim()).filter(l => l.length > 2 && l.length < 200);
+        for (const l of lines) {
+            if (l.match(/^(Running |Service name:|Operation name:|Label:|● Running|Reading |Writing |Searching |✓ |Completed)/)) {
+                progress.status = 'executing';
+                progress.lastAction = l;
+            } else if (l.startsWith('> ')) {
+                progress.status = 'responding';
+            }
+        }
+    });
+    proc.stderr.on('data', d => { stderr += d; });
+
+    const timeout = setTimeout(() => { proc.kill(); }, 300000);
 
     proc.on('close', () => {
         clearTimeout(timeout);
-        let clean = stdout.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '').replace(/\x1B\[\?25[hl]/g, '').replace(/\x1B\[[\d;]*m/g, '').replace(/\r/g, '').trim();
+        delete global.chatProgress[progressKey];
+        let clean = stdout.replace(/\x1B\[[0-9;]*[a-zA-Z]/g, '').replace(/\x1B\[\?25[hl]/g, '').replace(/\x1B\[[\d;]*m/g, '').replace(/\r/g, '').replace(/\[\?25[hl]/g, '').trim();
+        // Debug: log raw output to file
+        fs.writeFileSync(path.join(PROJECTS_DIR, project, 'last_raw_output.txt'), clean);
         const lines = clean.split('\n');
         const result = [];
-        let capturing = false;
         for (const line of lines) {
-            if (line.startsWith('> ')) { capturing = true; result.push(line.slice(2)); }
-            else if (capturing) {
-                if (line.match(/^(Running |Service name:|Operation name:|Parameters:|Region:|Label:|- [a-z-]+:|↓ |╰ |\(using tool|I will run|I'll append|Purpose:|At line:|The token|CategoryInfo|FullyQualifiedErrorId|\+|Completed in| - Completed|Appending to:|Reading |✓ Successfully|Writing |Searching |Created |Deleted )/)) { capturing = false; }
-                else if (line.trim() === '' && result.length > 0 && result[result.length - 1].trim() === '') {}
-                else { result.push(line); }
-            }
+            const t = line.trim();
+            // Skip noise lines
+            if (!t || t.startsWith('All tools are now trusted') || t.startsWith('Agents can sometimes') || t.startsWith('Learn more at') || t.startsWith('Agent for') || t === '⋮' || t === '▸' || t.match(/^▸ Time:/) || t.match(/^\[?\d*G/) || t === '(!)') continue;
+            // Action lines - skip
+            if (t.match(/^(● Running|Running |Service name:|Operation name:|Parameters:|Region:|Label:|↓ |╰ |\(using tool|Completed in| - Completed|Reading |Writing |Searching )/)) continue;
+            // Response/error content
+            if (t.startsWith('> ')) { result.push(t.slice(2)); }
+            else if (t.startsWith('● Execution failed')) { result.push('⚠️ ' + t.replace('● ', '')); }
+            else if (t.match(/^An error occurred|^Error:|^AccessDenied|^AuthFailure/)) { result.push(t); }
+            else if (t.startsWith('● ')) { result.push(t.replace('● ', '')); }
+            else if (result.length > 0 || t.match(/^(I'll |I will |Here|Your |The |This |✅|⚠️|No |Found |Checking )/i)) { result.push(t); }
         }
         const response = result.filter(l => l.trim() !== '').join('\n').replace(/\n\n+/g, '\n').trim() || `Error: ${stderr || 'No response'}`;
 
-        // Check for auth expiry
         if (stderr.includes('token') || stderr.includes('expired') || stderr.includes('unauthorized')) {
             return res.json({ response: '⚠️ Kiro CLI authentication expired. Please re-authenticate on the server: `kiro-cli login --use-device-flow`' });
         }
@@ -320,11 +422,10 @@ app.post('/api/chat', (req, res) => {
         if (state.history.length > 20) state.history = state.history.slice(-20);
         saveHistory(project);
 
-        // Auto-store meaningful interactions in knowledge base
         const lastUserMsg = state.history.filter(m => m.role === 'user').slice(-1)[0];
-        if (lastUserMsg && response.includes('✅')) {
+        if (lastUserMsg && (response.includes('✅') || response.includes('Created') || response.includes('configured') || response.includes('deployed') || response.includes('modified') || /\b(sg-|i-|vpc-|subnet-|arn:aws)\b/.test(response))) {
             const kbFile = path.join(PROJECTS_DIR, project, 'knowledge_base.txt');
-            const entry = `[${new Date().toISOString().split('T')[0]}] Q: ${lastUserMsg.content}\nA: ${response.slice(0, 300)}\n\n`;
+            const entry = `--- [${new Date().toISOString().split('T')[0]}] ---\nTask: ${lastUserMsg.content}\nResult:\n${response}\n\n`;
             fs.appendFileSync(kbFile, entry);
         }
 
@@ -336,6 +437,12 @@ app.post('/api/chat', (req, res) => {
         if (err.message.includes('ENOENT')) res.json({ response: '⚠️ kiro-cli not found. Install it on the server.' });
         else res.json({ response: `Failed: ${err.message}` });
     });
+});
+
+// --- Progress Polling ---
+app.get('/api/progress/:key', (req, res) => {
+    const p = (global.chatProgress || {})[req.params.key];
+    res.json(p || { status: 'done', lastAction: '' });
 });
 
 // --- Knowledge Export ---
@@ -430,6 +537,14 @@ app.get('/api/credentials/:project', (req, res) => {
     } else { res.json({ configured: false }); }
 });
 
+app.delete('/api/credentials/:project/disconnect', (req, res) => {
+    const state = getState(req.params.project);
+    state.awsEnv = {};
+    const credFile = path.join(PROJECTS_DIR, req.params.project, '.aws-env.json');
+    if (fs.existsSync(credFile)) fs.unlinkSync(credFile);
+    res.json({ success: true });
+});
+
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 // --- Admin APIs ---
@@ -500,5 +615,5 @@ app.delete('/api/admin/users/:email/projects/:project', (req, res) => {
     res.json({ success: true });
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3002;
 app.listen(PORT, () => console.log(`\n🚀 Multi-Project Agent at http://localhost:${PORT}\n   Default login: admin / admin\n`));

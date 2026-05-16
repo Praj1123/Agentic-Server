@@ -6,12 +6,18 @@
     <title>Infra Agent</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #0f0f1a; color: #e2e8f0; height: 100vh; display: flex; }
+        *::-webkit-scrollbar { width: 4px; }
+        *::-webkit-scrollbar-track { background: transparent; }
+        *::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 4px; }
+        *::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.5); }
+        * { scrollbar-width: thin; scrollbar-color: rgba(99,102,241,0.3) transparent; }
+        html { height: 100%; overflow: hidden; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #0f0f1a; color: #e2e8f0; height: 100%; overflow: hidden; display: flex; }
         .hidden { display: none !important; }
 
         /* Login */
         .login-screen { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); }
-        .login-box { background: rgba(30,41,59,0.8); backdrop-filter: blur(20px); border: 1px solid rgba(99,102,241,0.2); border-radius: 20px; padding: 36px; width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+        .login-box { background: rgba(30,41,59,0.8); backdrop-filter: blur(20px); border: 1px solid rgba(99,102,241,0.2); border-radius: 20px; padding: 36px; width: 380px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
         .login-box h2 { text-align: center; margin-bottom: 28px; font-size: 22px; background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .login-box label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #94a3b8; margin-bottom: 16px; font-weight: 500; }
         .login-box input { background: rgba(15,23,42,0.6); border: 1.5px solid #334155; border-radius: 10px; padding: 12px 16px; color: #e2e8f0; font-size: 14px; transition: all 0.2s; }
@@ -21,10 +27,28 @@
         #loginError { color: #f87171; font-size: 12px; margin-top: 10px; text-align: center; }
 
         /* Sidebar */
-        .sidebar { width: 260px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); border-right: 1px solid rgba(99,102,241,0.1); display: flex; flex-direction: column; }
+        .sidebar { width: 260px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); border-right: 1px solid rgba(99,102,241,0.1); display: flex; flex-direction: column; height: 100%; overflow: hidden; }
         .sidebar-header { padding: 22px 20px; border-bottom: 1px solid rgba(99,102,241,0.1); }
         .sidebar-header h1 { font-size: 16px; font-weight: 700; background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 10px; }
         .sidebar-header h1::before { content: ''; width: 8px; height: 8px; background: #34d399; border-radius: 50%; box-shadow: 0 0 8px #34d399; }
+
+        /* AI Face */
+        .ai-face { width: 40px; height: 40px; position: relative; display: inline-flex; align-items: center; justify-content: center; }
+        .ai-face .orb { width: 36px; height: 36px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #a78bfa, #6366f1 50%, #4f46e5); box-shadow: 0 0 20px rgba(99,102,241,0.4), inset 0 -4px 8px rgba(0,0,0,0.3); animation: orbPulse 3s ease-in-out infinite; position: relative; }
+        .ai-face .orb::after { content: ''; position: absolute; top: 6px; left: 8px; width: 10px; height: 6px; background: rgba(255,255,255,0.3); border-radius: 50%; transform: rotate(-20deg); }
+        .ai-face .eye { position: absolute; width: 5px; height: 5px; background: white; border-radius: 50%; top: 50%; box-shadow: 0 0 6px rgba(255,255,255,0.8); animation: blink 4s infinite; }
+        .ai-face .eye.left { left: 11px; }
+        .ai-face .eye.right { right: 11px; }
+        .ai-face .mouth { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); width: 10px; height: 3px; border-bottom: 2px solid rgba(255,255,255,0.6); border-radius: 0 0 5px 5px; animation: speak 2s ease-in-out infinite; }
+        .ai-face-lg { width: 64px; height: 64px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; }
+        .ai-face-lg .orb { width: 60px; height: 60px; }
+        .ai-face-lg .eye { width: 7px; height: 7px; }
+        .ai-face-lg .eye.left { left: 18px; }
+        .ai-face-lg .eye.right { right: 18px; }
+        .ai-face-lg .mouth { bottom: 16px; width: 14px; }
+        @keyframes orbPulse { 0%, 100% { box-shadow: 0 0 20px rgba(99,102,241,0.4), inset 0 -4px 8px rgba(0,0,0,0.3); transform: scale(1); } 50% { box-shadow: 0 0 30px rgba(99,102,241,0.6), inset 0 -4px 8px rgba(0,0,0,0.3); transform: scale(1.05); } }
+        @keyframes blink { 0%, 90%, 100% { transform: translateY(-50%) scaleY(1); } 95% { transform: translateY(-50%) scaleY(0.1); } }
+        @keyframes speak { 0%, 100% { height: 3px; border-radius: 0 0 5px 5px; } 50% { height: 6px; border-radius: 0 0 8px 8px; } }
         .project-section { padding: 16px; flex: 1; overflow-y: auto; }
         .project-section h3 { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #64748b; margin-bottom: 12px; font-weight: 600; }
         .project-item { padding: 10px 14px; border-radius: 10px; cursor: pointer; font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; transition: all 0.15s; color: #94a3b8; }
@@ -40,7 +64,7 @@
         .sidebar-btn.danger { color: #f87171; }
 
         /* Main */
-        .main { flex: 1; display: flex; flex-direction: column; background: #0f0f1a; }
+        .main { flex: 1; display: flex; flex-direction: column; background: #0f0f1a; height: 100%; overflow: hidden; }
         .topbar { padding: 14px 24px; border-bottom: 1px solid rgba(99,102,241,0.1); display: flex; align-items: center; justify-content: space-between; background: rgba(26,26,46,0.5); }
         .topbar .project-name { font-size: 14px; font-weight: 600; color: #e2e8f0; }
         .topbar .status { font-size: 12px; color: #34d399; display: flex; align-items: center; gap: 6px; }
@@ -67,16 +91,25 @@
         .message.agent ul { margin: 8px 0; padding-left: 20px; list-style: disc; }
         .message.agent li { margin: 3px 0; line-height: 1.5; }
         .message.agent h3, .message.agent h4 { margin: 12px 0 6px; color: #a5b4fc; }
+        .message.agent ol.styled-list { list-style: none; padding: 0; margin: 8px 0; }
+        .message.agent ol.styled-list li { display: flex; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid rgba(99,102,241,0.06); }
+        .message.agent ol.styled-list .num { background: rgba(99,102,241,0.15); color: #a5b4fc; font-size: 11px; font-weight: 700; width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .message.agent .status-ok { color: #10b981; }
+        .message.agent .status-warn { color: #f59e0b; }
+        .message.agent .status-err { color: #ef4444; }
+        .suggest-btn { display: block; width: 100%; text-align: left; margin: 4px 0; padding: 10px 14px; background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.2); border-radius: 10px; color: #c4b5fd; font-size: 13px; cursor: pointer; transition: all 0.15s; }
+        .suggest-btn:hover { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.4); transform: translateX(4px); }
         .typing { align-self: flex-start; padding: 16px 20px; background: rgba(30,41,59,0.6); border: 1px solid rgba(99,102,241,0.15); border-radius: 18px; display: flex; align-items: center; gap: 12px; }
         .typing .dots { display: flex; gap: 4px; }
         .typing .dots span { display: inline-block; width: 8px; height: 8px; background: #818cf8; border-radius: 50%; animation: bounce 1.4s infinite; }
         .typing .dots span:nth-child(2) { animation-delay: 0.2s; }
         .typing .dots span:nth-child(3) { animation-delay: 0.4s; }
         @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+        @keyframes fadeIn { to { opacity: 1; } }
         .typing .pulse-ring { width: 32px; height: 32px; border-radius: 50%; border: 2px solid transparent; border-top-color: #818cf8; border-right-color: #c084fc; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .typing .timer { font-size: 11px; color: #64748b; font-variant-numeric: tabular-nums; }
-        .typing .status-text { font-size: 12px; color: #94a3b8; animation: fadeText 2s infinite; }
+        .typing .status-text { font-size: 13px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 400px; transition: color 0.2s; }
         @keyframes fadeText { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
         /* Input */
@@ -113,7 +146,7 @@
     <!-- Login Screen -->
     <div class="login-screen" id="loginScreen">
         <div class="login-box">
-            <h2>🔐 Infra Agent</h2>
+            <div class="ai-face ai-face-lg"><div class="orb"><span class="eye left"></span><span class="eye right"></span><span class="mouth"></span></div></div>
             <div class="tabs" style="margin-bottom:20px">
                 <button class="tab active" onclick="switchAuthTab('signin')">Sign In</button>
                 <button class="tab" onclick="switchAuthTab('signup')">Sign Up</button>
@@ -122,6 +155,7 @@
                 <label>Email<input type="email" id="loginEmail" placeholder="you@company.com"></label>
                 <label>Password<input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"></label>
                 <label id="otpField" class="hidden">OTP Code<input type="text" id="loginOtp" placeholder="6-digit code from email" maxlength="6" onkeydown="if(event.key==='Enter')doLogin()"></label>
+                <button id="resendBtn" class="hidden" onclick="resendOtp()" style="background:transparent;border:1px solid #334155;color:#94a3b8;font-size:12px;margin-top:0;margin-bottom:8px;padding:8px" disabled>Resend OTP (60s)</button>
                 <button onclick="doLogin()">Sign In</button>
             </div>
             <div id="authSignup" class="hidden">
@@ -137,7 +171,7 @@
 
     <!-- App (hidden until login) -->
     <div class="sidebar hidden" id="appSidebar">
-        <div class="sidebar-header"><h1>Infra Agent</h1></div>
+        <div class="sidebar-header"><h1><div class="ai-face"><div class="orb"><span class="eye left"></span><span class="eye right"></span><span class="mouth"></span></div></div></h1></div>
         <div class="project-section">
             <h3>Projects</h3>
             <div id="projectList"></div>
@@ -212,6 +246,7 @@
             </div>
             <div class="modal-actions">
                 <button class="btn-save" onclick="saveCreds()">Save & Connect</button>
+                <button class="btn-cancel" onclick="disconnectCreds()" id="disconnectBtn" style="background:#fee2e2;color:#dc2626;display:none">Disconnect</button>
                 <button class="btn-cancel" onclick="closeCreds()">Cancel</button>
             </div>
             <div id="credStatus"></div>
@@ -229,6 +264,7 @@
             </div>
         </div>
     </div>
+
 
 
     <script>
@@ -256,8 +292,32 @@
             const res = await fetch(`${API_URL}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password, otp: otp || undefined }) });
             const data = await res.json();
             if (data.success) { token = data.token; localStorage.setItem('token', token); localStorage.setItem('role', data.role); showApp(); }
-            else if (data.otpSent) { document.getElementById('otpField').classList.remove('hidden'); document.getElementById('loginError').textContent = 'OTP sent to your email.'; document.getElementById('loginError').style.color = '#34d399'; }
+            else if (data.otpSent) { document.getElementById('otpField').classList.remove('hidden'); document.getElementById('loginError').textContent = 'OTP sent to your email.'; document.getElementById('loginError').style.color = '#34d399'; startResendTimer(); }
             else { document.getElementById('loginError').textContent = data.error; document.getElementById('loginError').style.color = '#f87171'; }
+        }
+
+        let resendInterval = null;
+        function startResendTimer() {
+            const btn = document.getElementById('resendBtn');
+            btn.classList.remove('hidden');
+            btn.disabled = true;
+            let sec = 60;
+            btn.textContent = `Resend OTP (${sec}s)`;
+            clearInterval(resendInterval);
+            resendInterval = setInterval(() => {
+                sec--;
+                if (sec <= 0) { clearInterval(resendInterval); btn.disabled = false; btn.textContent = 'Resend OTP'; }
+                else { btn.textContent = `Resend OTP (${sec}s)`; }
+            }, 1000);
+        }
+
+        async function resendOtp() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPass').value;
+            const res = await fetch(`${API_URL}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+            const data = await res.json();
+            if (data.otpSent) { document.getElementById('loginError').textContent = 'New OTP sent!'; document.getElementById('loginError').style.color = '#34d399'; startResendTimer(); }
+            else { document.getElementById('loginError').textContent = data.error || 'Failed to resend'; document.getElementById('loginError').style.color = '#f87171'; }
         }
 
         async function doSignup() {
@@ -309,52 +369,70 @@
             processed = processed.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
             processed = processed.replace(/`([^`]+)`/g, '<code>$1</code>');
             processed = processed.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            // Tables
             processed = processed.replace(/(\|.+\|[\n\r]+\|[-| :]+\|[\n\r]+((\|.+\|[\n\r]*)+))/g, (match) => {
                 const rows = match.trim().split('\n').filter(r => !r.match(/^\|[\s-:|]+\|$/));
                 let t = '<table>';
                 rows.forEach((row, i) => { const cells = row.split('|').filter(c => c.trim()); const tag = i === 0 ? 'th' : 'td'; t += '<tr>' + cells.map(c => `<${tag}>${c.trim()}</${tag}>`).join('') + '</tr>'; });
                 return t + '</table>';
             });
-            processed = processed.replace(/✅/g, '<span style="color:#10b981">✅</span>');
-            processed = processed.replace(/⚠️/g, '<span style="color:#f59e0b">⚠️</span>');
+            // Numbered lists (1. item or # Name)
+            processed = processed.replace(/^(\d+)\.\s+(.+)$/gm, '<li class="numbered"><span class="num">$1</span>$2</li>');
+            processed = processed.replace(/(<li class="numbered">.*<\/li>\n?)+/g, (m) => `<ol class="styled-list">${m}</ol>`);
+            // Status icons
+            processed = processed.replace(/✅/g, '<span class="status-ok">✅</span>');
+            processed = processed.replace(/⚠️/g, '<span class="status-warn">⚠️</span>');
+            processed = processed.replace(/❌/g, '<span class="status-err">❌</span>');
+            // Headers
             processed = processed.replace(/^### (.+)$/gm, '<h4>$1</h4>');
             processed = processed.replace(/^## (.+)$/gm, '<h3>$1</h3>');
+            // Bullet lists
             processed = processed.replace(/^- (.+)$/gm, '<li>$1</li>');
-            processed = processed.replace(/(<li>.*<\/li>[\n]*)+/g, (m) => `<ul>${m}</ul>`);
+            processed = processed.replace(/(<li>.*<\/li>\n?)+/g, (m) => { if (m.includes('class="numbered"')) return m; return `<ul>${m}</ul>`; });
+            // Suggested actions (short actionable lines ending with ?)
+            processed = processed.replace(/^((?:Check|View|Show|List|Inspect|Describe|Get|Monitor|Explain|How).{5,80}\?)$/gm, '<button class="suggest-btn" onclick="suggestClick(this)">$1</button>');
             processed = processed.replace(/\n/g, '<br>');
-            processed = processed.replace(/<br><(table|pre|ul|h[34])/g, '<$1');
-            processed = processed.replace(/<\/(table|pre|ul|h[34])><br>/g, '</$1>');
+            processed = processed.replace(/<br><(table|pre|ul|ol|h[34]|button)/g, '<$1');
+            processed = processed.replace(/<\/(table|pre|ul|ol|h[34]|button)><br>/g, '</$1>');
             codeBlocks.forEach((b, i) => { processed = processed.replace(`__CB${i}__`, b); });
             return processed;
         }
 
+        let progressInterval = null;
         function showTyping() {
             const d = document.createElement('div'); d.className = 'typing'; d.id = 'typing';
             d.innerHTML = `
                 <div class="pulse-ring"></div>
-                <div>
+                <div style="flex:1;min-width:0">
                     <div class="status-text" id="statusText">Thinking...</div>
                     <div class="timer" id="loadTimer">0s</div>
                 </div>
-                <div class="dots"><span></span><span></span><span></span></div>
             `;
             chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
             let sec = 0;
-            const statusMessages = ['Thinking...', 'Analyzing...', 'Querying AWS...', 'Processing...', 'Almost there...'];
-            timerInterval = setInterval(() => {
-                sec++;
-                const el = document.getElementById('loadTimer');
-                const st = document.getElementById('statusText');
-                if (el) el.textContent = sec + 's';
-                if (st && sec % 4 === 0) st.textContent = statusMessages[Math.min(Math.floor(sec / 4), statusMessages.length - 1)];
-            }, 1000);
+            timerInterval = setInterval(() => { sec++; const el = document.getElementById('loadTimer'); if (el) el.textContent = sec + 's'; }, 1000);
         }
-        function hideTyping() { clearInterval(timerInterval); const el = document.getElementById('typing'); if (el) el.remove(); }
+        function hideTyping() { clearInterval(timerInterval); clearInterval(progressInterval); const el = document.getElementById('typing'); if (el) el.remove(); }
+
+        function pollProgress(key) {
+            progressInterval = setInterval(async () => {
+                try {
+                    const r = await fetch(`${API_URL}/progress/${key}`, { headers: headers() });
+                    const p = await r.json();
+                    const st = document.getElementById('statusText');
+                    if (!st) { clearInterval(progressInterval); return; }
+                    if (p.lastAction) st.textContent = p.lastAction;
+                    else if (p.status === 'executing') st.textContent = 'Executing tools...';
+                    else if (p.status === 'responding') st.textContent = 'Generating response...';
+                } catch {}
+            }, 1500);
+        }
 
         async function send() {
             const text = input.value.trim();
             if (!text || !currentProject) return;
             addMessage(text, 'user'); input.value = ''; sendBtn.disabled = true; showTyping();
+            pollProgress(currentProject);
             try {
                 const res = await fetch(`${API_URL}/chat`, { method: 'POST', headers: headers(), body: JSON.stringify({ message: text, project: currentProject }) });
                 if (res.status === 401) { doLogout(); return; }
@@ -367,6 +445,7 @@
 
         function handleKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
         function copyCode(btn) { navigator.clipboard.writeText(btn.nextElementSibling.textContent).then(() => { btn.textContent = '✓'; btn.classList.add('copied'); setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000); }); }
+        function suggestClick(btn) { document.getElementById('input').value = btn.textContent; send(); }
 
         function clearChat() {
             if (!confirm('Clear chat messages? (Knowledge base is preserved)')) return;
@@ -452,11 +531,19 @@
             document.getElementById('credModal').classList.add('show');
             fetch(`${API_URL}/credentials/${currentProject}`, { headers: headers() }).then(r => r.json()).then(data => {
                 const status = document.getElementById('credStatus');
+                document.getElementById('disconnectBtn').style.display = data.configured ? 'block' : 'none';
                 if (data.configured) { status.textContent = '✓ Connected — ' + (data.accessKey || data.profile); status.style.color = '#10b981'; if (data.region) document.getElementById('iamRegion').value = data.region; }
                 else { status.textContent = ''; }
             }).catch(() => {});
         }
         function closeCreds() { document.getElementById('credModal').classList.remove('show'); }
+        async function disconnectCreds() {
+            if (!confirm('Disconnect AWS credentials for this project?')) return;
+            await fetch(`${API_URL}/credentials/${currentProject}/disconnect`, { method: 'DELETE', headers: headers() });
+            document.getElementById('credStatus').textContent = 'Disconnected'; document.getElementById('credStatus').style.color = '#f87171';
+            document.getElementById('disconnectBtn').style.display = 'none';
+            loadCredStatus();
+        }
         function switchTab(tab) {
             document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', (tab === 'iam' && i === 0) || (tab === 'sso' && i === 1)));
             document.getElementById('tab-iam').classList.toggle('hidden', tab !== 'iam');

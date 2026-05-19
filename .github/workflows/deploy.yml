@@ -1,4 +1,4 @@
-name: Deploy Infra Agent
+name: Deploy Vira
 
 on:
   push:
@@ -18,50 +18,50 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             # Create app directory
-            sudo mkdir -p /opt/infra-agent
-            sudo chown $USER:$USER /opt/infra-agent
+            sudo mkdir -p /opt/vira
+            sudo chown $USER:$USER /opt/vira
 
             # Pull latest code
-            if [ -d "/opt/infra-agent/.git" ]; then
-              cd /opt/infra-agent && git pull
+            if [ -d "/opt/vira/.git" ]; then
+              cd /opt/vira && git pull
             else
-              rm -rf /opt/infra-agent/*
-              git clone https://github.com/${{ github.repository }}.git /opt/infra-agent
+              rm -rf /opt/vira/*
+              git clone https://github.com/${{ github.repository }}.git /opt/vira
             fi
 
             # Create projects directory
-            mkdir -p ~/.infra-agent/projects
+            mkdir -p ~/.vira/projects
 
             # Install dependencies
-            cd /opt/infra-agent/web/backend
+            cd /opt/vira/web/backend
             npm install --omit=dev
 
             # Setup systemd service (first time only)
-            if [ ! -f /etc/systemd/system/infra-agent.service ]; then
-              sudo tee /etc/systemd/system/infra-agent.service > /dev/null << 'EOF'
+            if [ ! -f /etc/systemd/system/vira.service ]; then
+              sudo tee /etc/systemd/system/vira.service > /dev/null << 'EOF'
             [Unit]
-            Description=Infrastructure Agent
+            Description=Vira
             After=network.target
 
             [Service]
             Type=simple
             User=ubuntu
-            WorkingDirectory=/opt/infra-agent/web/backend
+            WorkingDirectory=/opt/vira/web/backend
             ExecStart=/usr/bin/node server.js
             Restart=always
             Environment=PORT=3001
-            Environment=PROJECTS_DIR=/home/ubuntu/.infra-agent/projects
+            Environment=PROJECTS_DIR=/home/ubuntu/.vira/projects
 
             [Install]
             WantedBy=multi-user.target
             EOF
               sudo systemctl daemon-reload
-              sudo systemctl enable infra-agent
+              sudo systemctl enable vira
             fi
 
             # Restart service
-            sudo systemctl stop infra-agent || true
+            sudo systemctl stop vira || true
             sleep 1
             sudo kill -9 $(sudo lsof -t -i:3001) 2>/dev/null || true
-            sudo systemctl start infra-agent
+            sudo systemctl start vira
             echo "✅ Deployed and running"

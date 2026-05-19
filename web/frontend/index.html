@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Infra Agent</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>Vira</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         *::-webkit-scrollbar { width: 4px; }
@@ -14,6 +16,7 @@
         html { height: 100%; overflow: hidden; }
         body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #0f0f1a; color: #e2e8f0; height: 100%; overflow: hidden; display: flex; }
         .hidden { display: none !important; }
+        .brand { font-family: 'Space Grotesk', sans-serif; font-weight: 700; letter-spacing: -0.5px; }
 
         /* Login */
         .login-screen { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); }
@@ -23,7 +26,7 @@
         .login-box input { background: rgba(15,23,42,0.6); border: 1.5px solid #334155; border-radius: 10px; padding: 12px 16px; color: #e2e8f0; font-size: 14px; transition: all 0.2s; }
         .login-box input:focus { outline: none; border-color: #818cf8; box-shadow: 0 0 0 3px rgba(129,140,248,0.15); }
         .login-box button { width: 100%; background: linear-gradient(135deg, #667eea, #764ba2); border: none; border-radius: 10px; padding: 13px; color: white; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 8px; box-shadow: 0 4px 16px rgba(102,126,234,0.3); transition: all 0.2s; }
-        .login-box button:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(102,126,234,0.4); }
+        .login-box button:hover { box-shadow: 0 6px 20px rgba(102,126,234,0.4); }
         #loginError { color: #f87171; font-size: 12px; margin-top: 10px; text-align: center; }
 
         /* Sidebar */
@@ -34,21 +37,20 @@
 
         /* AI Face */
         .ai-face { width: 40px; height: 40px; position: relative; display: inline-flex; align-items: center; justify-content: center; }
-        .ai-face .orb { width: 36px; height: 36px; border-radius: 50%; background: radial-gradient(circle at 30% 30%, #a78bfa, #6366f1 50%, #4f46e5); box-shadow: 0 0 20px rgba(99,102,241,0.4), inset 0 -4px 8px rgba(0,0,0,0.3); animation: orbPulse 3s ease-in-out infinite; position: relative; }
-        .ai-face .orb::after { content: ''; position: absolute; top: 6px; left: 8px; width: 10px; height: 6px; background: rgba(255,255,255,0.3); border-radius: 50%; transform: rotate(-20deg); }
-        .ai-face .eye { position: absolute; width: 5px; height: 5px; background: white; border-radius: 50%; top: 50%; box-shadow: 0 0 6px rgba(255,255,255,0.8); animation: blink 4s infinite; }
-        .ai-face .eye.left { left: 11px; }
-        .ai-face .eye.right { right: 11px; }
-        .ai-face .mouth { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); width: 10px; height: 3px; border-bottom: 2px solid rgba(255,255,255,0.6); border-radius: 0 0 5px 5px; animation: speak 2s ease-in-out infinite; }
+        .ai-face .orb { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #6366f1, #8b5cf6); box-shadow: 0 0 12px rgba(99,102,241,0.3); position: relative; animation: breathe 4s ease-in-out infinite; }
+        .ai-face .orb::after { content: ''; position: absolute; top: 5px; left: 7px; width: 8px; height: 5px; background: rgba(255,255,255,0.2); border-radius: 50%; }
+        .ai-face .eye { position: absolute; width: 4px; height: 4px; background: white; border-radius: 50%; top: 50%; animation: blink 5s infinite; }
+        .ai-face .eye.left { left: 12px; }
+        .ai-face .eye.right { right: 12px; }
+        .ai-face .mouth { position: absolute; bottom: 11px; left: 50%; transform: translateX(-50%); width: 8px; height: 2px; background: rgba(255,255,255,0.5); border-radius: 4px; }
         .ai-face-lg { width: 64px; height: 64px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; }
-        .ai-face-lg .orb { width: 60px; height: 60px; }
-        .ai-face-lg .eye { width: 7px; height: 7px; }
+        .ai-face-lg .orb { width: 56px; height: 56px; }
+        .ai-face-lg .eye { width: 6px; height: 6px; }
         .ai-face-lg .eye.left { left: 18px; }
         .ai-face-lg .eye.right { right: 18px; }
-        .ai-face-lg .mouth { bottom: 16px; width: 14px; }
-        @keyframes orbPulse { 0%, 100% { box-shadow: 0 0 20px rgba(99,102,241,0.4), inset 0 -4px 8px rgba(0,0,0,0.3); transform: scale(1); } 50% { box-shadow: 0 0 30px rgba(99,102,241,0.6), inset 0 -4px 8px rgba(0,0,0,0.3); transform: scale(1.05); } }
-        @keyframes blink { 0%, 90%, 100% { transform: translateY(-50%) scaleY(1); } 95% { transform: translateY(-50%) scaleY(0.1); } }
-        @keyframes speak { 0%, 100% { height: 3px; border-radius: 0 0 5px 5px; } 50% { height: 6px; border-radius: 0 0 8px 8px; } }
+        .ai-face-lg .mouth { bottom: 16px; width: 12px; }
+        @keyframes breathe { 0%, 100% { box-shadow: 0 0 12px rgba(99,102,241,0.3); transform: scale(1); } 50% { box-shadow: 0 0 18px rgba(99,102,241,0.4); transform: scale(1.02); } }
+        @keyframes blink { 0%, 92%, 100% { transform: translateY(-50%) scaleY(1); } 95% { transform: translateY(-50%) scaleY(0.1); } }
         .project-section { padding: 16px; flex: 1; overflow-y: auto; }
         .project-section h3 { font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #64748b; margin-bottom: 12px; font-weight: 600; }
         .project-item { padding: 10px 14px; border-radius: 10px; cursor: pointer; font-size: 13px; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; transition: all 0.15s; color: #94a3b8; }
@@ -75,8 +77,9 @@
 
         /* Chat */
         .chat-container { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; position: relative; }
-        .message { max-width: 75%; padding: 14px 18px; border-radius: 18px; line-height: 1.5; font-size: 14px; white-space: pre-line; word-wrap: break-word; animation: fadeIn 0.3s; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        .message { max-width: 75%; padding: 14px 18px; border-radius: 18px; line-height: 1.5; font-size: 14px; white-space: pre-line; word-wrap: break-word; animation: msgIn 0.25s ease-out; }
+        @keyframes msgIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         .message.user { align-self: flex-end; background: linear-gradient(135deg, #667eea, #764ba2); border-bottom-right-radius: 4px; color: white; box-shadow: 0 4px 12px rgba(102,126,234,0.2); }
         .message.agent { align-self: flex-start; background: rgba(30,41,59,0.6); border: 1px solid rgba(99,102,241,0.15); border-bottom-left-radius: 4px; backdrop-filter: blur(10px); }
         .message.agent code { background: rgba(99,102,241,0.15); padding: 2px 7px; border-radius: 5px; font-size: 12px; font-family: 'JetBrains Mono', monospace; color: #c4b5fd; }
@@ -99,18 +102,16 @@
         .message.agent .status-err { color: #ef4444; }
         .suggest-btn { display: block; width: 100%; text-align: left; margin: 4px 0; padding: 10px 14px; background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.2); border-radius: 10px; color: #c4b5fd; font-size: 13px; cursor: pointer; transition: all 0.15s; }
         .suggest-btn:hover { background: rgba(99,102,241,0.15); border-color: rgba(99,102,241,0.4); transform: translateX(4px); }
-        .typing { align-self: flex-start; padding: 16px 20px; background: rgba(30,41,59,0.6); border: 1px solid rgba(99,102,241,0.15); border-radius: 18px; display: flex; align-items: center; gap: 12px; }
-        .typing .dots { display: flex; gap: 4px; }
-        .typing .dots span { display: inline-block; width: 8px; height: 8px; background: #818cf8; border-radius: 50%; animation: bounce 1.4s infinite; }
-        .typing .dots span:nth-child(2) { animation-delay: 0.2s; }
-        .typing .dots span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
-        @keyframes fadeIn { to { opacity: 1; } }
-        .typing .pulse-ring { width: 32px; height: 32px; border-radius: 50%; border: 2px solid transparent; border-top-color: #818cf8; border-right-color: #c084fc; animation: spin 1s linear infinite; }
+        .typing { align-self: flex-start; padding: 14px 18px; background: rgba(30,41,59,0.6); border: 1px solid rgba(99,102,241,0.1); border-radius: 16px; display: flex; align-items: center; gap: 12px; animation: fadeIn 0.2s ease; }
+        .typing .dots { display: flex; gap: 5px; }
+        .typing .dots span { display: inline-block; width: 6px; height: 6px; background: #6366f1; border-radius: 50%; opacity: 0.4; animation: pulse 1.4s ease-in-out infinite; }
+        .typing .dots span:nth-child(2) { animation-delay: 0.15s; }
+        .typing .dots span:nth-child(3) { animation-delay: 0.3s; }
+        @keyframes pulse { 0%, 100% { opacity: 0.3; transform: scale(1); } 50% { opacity: 1; transform: scale(1.15); } }
+        .typing .pulse-ring { width: 28px; height: 28px; border-radius: 50%; border: 2px solid rgba(99,102,241,0.15); border-top-color: #6366f1; animation: spin 0.8s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
         .typing .timer { font-size: 11px; color: #64748b; font-variant-numeric: tabular-nums; }
-        .typing .status-text { font-size: 13px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 400px; transition: color 0.2s; }
-        @keyframes fadeText { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+        .typing .status-text { font-size: 12px; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 400px; }
 
         /* Input */
         .input-area { padding: 18px 24px; border-top: 1px solid rgba(99,102,241,0.1); background: rgba(26,26,46,0.5); }
@@ -118,13 +119,14 @@
         .input-wrapper textarea { flex: 1; background: rgba(30,41,59,0.6); border: 1.5px solid rgba(99,102,241,0.2); border-radius: 14px; padding: 13px 18px; color: #e2e8f0; font-size: 14px; resize: none; height: 48px; font-family: inherit; transition: all 0.2s; }
         .input-wrapper textarea:focus { outline: none; border-color: #818cf8; box-shadow: 0 0 0 3px rgba(129,140,248,0.1); }
         .input-wrapper button { background: linear-gradient(135deg, #667eea, #764ba2); border: none; border-radius: 12px; width: 48px; height: 48px; color: white; font-size: 18px; cursor: pointer; box-shadow: 0 4px 12px rgba(102,126,234,0.3); transition: all 0.2s; }
-        .input-wrapper button:hover { transform: translateY(-1px); }
+        .input-wrapper button:hover { opacity: 0.9; }
         .input-wrapper button:disabled { background: #334155; box-shadow: none; cursor: not-allowed; }
 
         /* Modal */
-        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(6px); z-index: 100; align-items: center; justify-content: center; }
-        .modal-overlay.show { display: flex; }
-        .modal { background: #1e293b; border: 1px solid rgba(99,102,241,0.2); border-radius: 20px; padding: 30px; width: 440px; max-height: 80vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+        .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px); z-index: 100; align-items: center; justify-content: center; }
+        .modal-overlay.show { display: flex; animation: fadeIn 0.15s ease; }
+        .modal { background: #1e293b; border: 1px solid rgba(99,102,241,0.2); border-radius: 16px; padding: 28px; width: 440px; max-height: 80vh; overflow-y: auto; box-shadow: 0 16px 48px rgba(0,0,0,0.4); animation: modalIn 0.2s ease-out; }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.97) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
         .modal h2 { margin-bottom: 22px; font-size: 17px; background: linear-gradient(135deg, #818cf8, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .modal label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: #94a3b8; margin-bottom: 14px; font-weight: 500; }
         .modal input { background: rgba(15,23,42,0.6); border: 1.5px solid #334155; border-radius: 10px; padding: 10px 14px; color: #e2e8f0; font-size: 13px; transition: all 0.2s; }
@@ -147,6 +149,7 @@
     <div class="login-screen" id="loginScreen">
         <div class="login-box">
             <div class="ai-face ai-face-lg"><div class="orb"><span class="eye left"></span><span class="eye right"></span><span class="mouth"></span></div></div>
+            <h2 class="brand" style="text-align:center;font-size:24px;margin-bottom:24px;background:linear-gradient(135deg,#818cf8,#c084fc);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Vira</h2>
             <div class="tabs" style="margin-bottom:20px">
                 <button class="tab active" onclick="switchAuthTab('signin')">Sign In</button>
                 <button class="tab" onclick="switchAuthTab('signup')">Sign Up</button>
@@ -171,16 +174,22 @@
 
     <!-- App (hidden until login) -->
     <div class="sidebar hidden" id="appSidebar">
-        <div class="sidebar-header"><h1><div class="ai-face"><div class="orb"><span class="eye left"></span><span class="eye right"></span><span class="mouth"></span></div></div></h1></div>
+        <div class="sidebar-header"><h1><div class="ai-face"><div class="orb"><span class="eye left"></span><span class="eye right"></span><span class="mouth"></span></div></div> <span class="brand">Vira</span></h1></div>
         <div class="project-section">
             <h3>Projects</h3>
             <div id="projectList"></div>
         </div>
         <div class="sidebar-footer">
+            <div id="userProfile" style="padding:10px 12px;background:rgba(99,102,241,0.06);border-radius:8px;margin-bottom:6px">
+                <div style="font-size:13px;font-weight:600;color:#e2e8f0" id="profileName">—</div>
+                <div style="font-size:11px;color:#64748b;margin-top:2px" id="profileEmail">—</div>
+                <div style="margin-top:4px"><span id="profileRole" style="font-size:10px;padding:2px 8px;border-radius:4px;background:rgba(99,102,241,0.15);color:#a5b4fc;font-weight:600"></span></div>
+            </div>
             <button class="sidebar-btn primary hidden" id="btnNewProject" onclick="openNewProject()">+ New Project</button>
             <button class="sidebar-btn" onclick="openKnowledge()">📚 Knowledge Base</button>
             <button class="sidebar-btn" onclick="openCreds()">⚙️ AWS Credentials</button>
             <button class="sidebar-btn danger hidden" id="btnDeleteProject" onclick="deleteProject()">🗑 Delete Project</button>
+            <button class="sidebar-btn" onclick="openChangePassword()">🔑 Change Password</button>
             <button class="sidebar-btn" onclick="doLogout()" style="margin-top:8px;color:#64748b">↩ Logout</button>
             <a href="/admin.html" class="sidebar-btn hidden" id="adminLink" style="text-decoration:none;text-align:center;color:#a78bfa">👑 Admin Panel</a>
         </div>
@@ -267,6 +276,21 @@
 
 
 
+    <!-- Change Password Modal -->
+    <div class="modal-overlay" id="passwordModal">
+        <div class="modal">
+            <h2>🔑 Change Password</h2>
+            <label>Current Password<input type="password" id="currentPw"></label>
+            <label>New Password<input type="password" id="newPw" placeholder="Min 8 characters"></label>
+            <label>Confirm New Password<input type="password" id="confirmPw"></label>
+            <div class="modal-actions">
+                <button class="btn-save" onclick="changePassword()">Update Password</button>
+                <button class="btn-cancel" onclick="closeChangePassword()">Cancel</button>
+            </div>
+            <div id="pwStatus"></div>
+        </div>
+    </div>
+
     <script>
         const API_URL = '/api';
         let token = localStorage.getItem('token');
@@ -330,7 +354,7 @@
             else { document.getElementById('loginError').textContent = data.error; }
         }
 
-        function doLogout() { localStorage.removeItem('token'); localStorage.removeItem('role'); token = null; location.reload(); }
+        function doLogout() { if (!confirm('Are you sure you want to logout?')) return; localStorage.removeItem('token'); localStorage.removeItem('role'); token = null; location.reload(); }
 
         function showApp() {
             document.getElementById('loginScreen').classList.add('hidden');
@@ -342,6 +366,12 @@
                 document.getElementById('btnNewProject').classList.remove('hidden');
                 document.getElementById('btnDeleteProject').classList.remove('hidden');
             }
+            // Load user profile
+            fetch(`${API_URL}/me`, { headers: headers() }).then(r => r.json()).then(data => {
+                document.getElementById('profileName').textContent = data.name || '—';
+                document.getElementById('profileEmail').textContent = data.email || '—';
+                document.getElementById('profileRole').textContent = (data.role || 'user').toUpperCase();
+            }).catch(() => {});
             loadProjects();
         }
 
@@ -404,7 +434,7 @@
             d.innerHTML = `
                 <div class="pulse-ring"></div>
                 <div style="flex:1;min-width:0">
-                    <div class="status-text" id="statusText">Thinking...</div>
+                    <div class="status-text" id="statusText">🧠 Thinking...</div>
                     <div class="timer" id="loadTimer">0s</div>
                 </div>
             `;
@@ -421,11 +451,22 @@
                     const p = await r.json();
                     const st = document.getElementById('statusText');
                     if (!st) { clearInterval(progressInterval); return; }
-                    if (p.lastAction) st.textContent = p.lastAction;
-                    else if (p.status === 'executing') st.textContent = 'Executing tools...';
-                    else if (p.status === 'responding') st.textContent = 'Generating response...';
+                    if (p.status === 'done') { clearInterval(progressInterval); return; }
+                    if (p.lastAction) {
+                        let label = p.lastAction;
+                        if (label.startsWith('Running ') || label.startsWith('● Running')) label = '⚡ ' + label.replace('● ', '');
+                        else if (label.startsWith('Reading ')) label = '📖 ' + label;
+                        else if (label.startsWith('Writing ')) label = '✏️ ' + label;
+                        else if (label.startsWith('Searching ')) label = '🔍 ' + label;
+                        else if (label.startsWith('Completed') || label.startsWith('✓')) label = '✅ ' + label;
+                        else label = '⚡ ' + label;
+                        st.textContent = label;
+                    }
+                    else if (p.status === 'executing') st.textContent = '⚡ Executing...';
+                    else if (p.status === 'responding') st.textContent = '✍️ Writing response...';
+                    else st.textContent = '🧠 Thinking...';
                 } catch {}
-            }, 1500);
+            }, 1000);
         }
 
         async function send() {
@@ -561,6 +602,20 @@
                 loadCredStatus();
             } else if (data.success) { status.textContent = '✓ ' + data.identity; status.style.color = '#34d399'; loadCredStatus(); setTimeout(closeCreds, 1500); }
             else { status.textContent = data.error; status.style.color = '#f87171'; }
+        }
+        // --- Change Password ---
+        function openChangePassword() { document.getElementById('passwordModal').classList.add('show'); document.getElementById('pwStatus').textContent = ''; }
+        function closeChangePassword() { document.getElementById('passwordModal').classList.remove('show'); document.getElementById('currentPw').value = ''; document.getElementById('newPw').value = ''; document.getElementById('confirmPw').value = ''; }
+        async function changePassword() {
+            const currentPassword = document.getElementById('currentPw').value;
+            const newPassword = document.getElementById('newPw').value;
+            const confirm = document.getElementById('confirmPw').value;
+            const status = document.getElementById('pwStatus');
+            if (newPassword !== confirm) { status.textContent = 'Passwords do not match'; status.style.cssText = 'color:#f87171;margin-top:10px'; return; }
+            const res = await fetch(`${API_URL}/change-password`, { method: 'POST', headers: headers(), body: JSON.stringify({ currentPassword, newPassword }) });
+            const data = await res.json();
+            if (data.success) { status.textContent = '✅ Password changed'; status.style.cssText = 'color:#34d399;margin-top:10px'; setTimeout(closeChangePassword, 1500); }
+            else { status.textContent = data.error; status.style.cssText = 'color:#f87171;margin-top:10px'; }
         }
     </script>
 </body>

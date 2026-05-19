@@ -1,0 +1,9 @@
+node_modules/
+.env
+*.log
+sessions.json
+users.json
+usage.json
+*.db
+*.sqlite
+last_raw_output.txt
